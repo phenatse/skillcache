@@ -206,6 +206,7 @@ export default function App() {
       <Header
         totalCount={tools.length + prompts.length}
         onAdd={() => openAdd(tab === 'prompts' ? 'prompt' : 'tool')}
+        lastSaved={lastSaved}
       />
 
       <SearchBar
@@ -230,7 +231,7 @@ export default function App() {
         />
       )}
 
-      <TabBar active={tab} onSelect={handleTabSelect} lastSaved={lastSaved} />
+      <TabBar active={tab} onSelect={handleTabSelect} />
 
       {/* Scrolling content area */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '4px 14px 14px', position: 'relative', zIndex: 2 }}>

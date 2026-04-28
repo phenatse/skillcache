@@ -5,7 +5,6 @@ import { Icon, IconPaths } from '../icons'
 interface TabBarProps {
   active: Tab
   onSelect: (tab: Tab) => void
-  lastSaved: Date | null
 }
 
 const TABS: { id: Tab; label: string; icon: keyof typeof IconPaths }[] = [
@@ -16,9 +15,7 @@ const TABS: { id: Tab; label: string; icon: keyof typeof IconPaths }[] = [
 ]
 
 /** Tab bar — sits between search/filter area and the scrolling content. */
-export function TabBar({ active, onSelect, lastSaved }: TabBarProps) {
-  const syncLabel = lastSaved ? `SYNCED · ${relativeTime(lastSaved)}` : 'NEVER SAVED'
-
+export function TabBar({ active, onSelect }: TabBarProps) {
   return (
     <div style={{
       height: 40, padding: '0 14px',
@@ -26,7 +23,7 @@ export function TabBar({ active, onSelect, lastSaved }: TabBarProps) {
       background: 'rgba(255,255,255,0.55)',
       backdropFilter: 'blur(16px) saturate(180%)',
       WebkitBackdropFilter: 'blur(16px) saturate(180%)',
-      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      display: 'flex', alignItems: 'center',
       position: 'relative', zIndex: 2,
       flexShrink: 0,
     }}>
@@ -54,18 +51,7 @@ export function TabBar({ active, onSelect, lastSaved }: TabBarProps) {
           )
         })}
       </div>
-      <span style={{ fontSize: 9, fontFamily: T.mono, color: T.ink3, letterSpacing: 0.4 }}>
-        {syncLabel}
-      </span>
     </div>
   )
 }
 
-function relativeTime(date: Date): string {
-  const mins = Math.floor((Date.now() - date.getTime()) / 60_000)
-  if (mins < 1)  return 'just now'
-  if (mins === 1) return '1m'
-  if (mins < 60)  return `${mins}m`
-  const hrs = Math.floor(mins / 60)
-  return hrs === 1 ? '1h' : `${hrs}h`
-}

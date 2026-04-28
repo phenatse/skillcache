@@ -6,11 +6,13 @@ import { IconBtn } from './IconBtn'
 interface HeaderProps {
   totalCount: number
   onAdd: () => void
+  lastSaved?: Date | null
   right?: ReactNode
 }
 
 /** Top bar: logo mark, wordmark, item count, action buttons. */
-export function Header({ totalCount, onAdd, right }: HeaderProps) {
+export function Header({ totalCount, onAdd, lastSaved, right }: HeaderProps) {
+  const syncLabel = lastSaved ? `synced ${relativeTime(lastSaved)}` : null
   return (
     <div style={{
       height: 52, padding: '0 14px',
@@ -30,7 +32,7 @@ export function Header({ totalCount, onAdd, right }: HeaderProps) {
             Skill Cache
           </span>
           <span style={{ fontSize: 9, fontFamily: T.mono, color: T.ink3, marginTop: 2, letterSpacing: 0.5 }}>
-            v1.0 · {totalCount} saved
+            v1.0 · {totalCount} saved{syncLabel ? ` · ${syncLabel}` : ''}
           </span>
         </div>
       </div>
@@ -44,6 +46,15 @@ export function Header({ totalCount, onAdd, right }: HeaderProps) {
       </div>
     </div>
   )
+}
+
+function relativeTime(date: Date): string {
+  const mins = Math.floor((Date.now() - date.getTime()) / 60_000)
+  if (mins < 1)   return 'just now'
+  if (mins === 1) return '1m ago'
+  if (mins < 60)  return `${mins}m ago`
+  const hrs = Math.floor(mins / 60)
+  return hrs === 1 ? '1h ago' : `${hrs}h ago`
 }
 
 function LogoMark() {
