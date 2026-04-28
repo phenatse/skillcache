@@ -72,21 +72,29 @@ function relativeTime(date: Date): string {
 
 function LogoMark() {
   return (
-    <div style={{
-      width: 22, height: 22, borderRadius: 6,
-      background: `linear-gradient(135deg, ${T.indigo} 0%, ${T.cyan} 100%)`,
-      boxShadow: `0 0 0 1px rgba(255,255,255,0.12), 0 4px 12px ${T.indigoDeep}66`,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      flexShrink: 0,
-    }}>
-      {/* Small white angled glyph */}
-      <div style={{
-        width: 10, height: 10,
-        border: '1.5px solid rgba(255,255,255,0.95)',
-        borderRight: 'none', borderTop: 'none',
-        borderRadius: 1,
-        transform: 'rotate(-45deg) translate(1px, -1px)',
-      }} />
-    </div>
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 128 128"
+      width={28} height={28}
+      style={{ display: 'block', flexShrink: 0, filter: `drop-shadow(0 3px 8px ${T.indigoDeep}66)` }}
+    >
+      <defs>
+        <linearGradient id="sc-bg" x1="0" y1="0" x2="128" y2="128" gradientUnits="userSpaceOnUse">
+          <stop offset="0%"   stopColor="#5B6CFF"/>
+          <stop offset="100%" stopColor="#1FB3C4"/>
+        </linearGradient>
+        <linearGradient id="sc-shine" x1="0" y1="0" x2="0" y2="70" gradientUnits="userSpaceOnUse">
+          <stop offset="0%"   stopColor="white" stopOpacity={0.22}/>
+          <stop offset="100%" stopColor="white" stopOpacity={0}/>
+        </linearGradient>
+      </defs>
+      <rect width="128" height="128" rx="26" fill="url(#sc-bg)"/>
+      <rect width="128" height="70"  rx="26" fill="url(#sc-shine)"/>
+      <path
+        fillRule="evenodd" fill="rgba(255,255,255,0.20)"
+        d="M 60,48 L 61,40 A 30,30 0 0,1 67,40 L 68,48 A 22,22 0 0,1 76,52 L 83,47 A 30,30 0 0,1 87,51 L 82,58 A 22,22 0 0,1 86,66 L 94,67 A 30,30 0 0,1 94,73 L 86,74 A 22,22 0 0,1 82,82 L 87,89 A 30,30 0 0,1 83,93 L 76,88 A 22,22 0 0,1 68,92 L 67,100 A 30,30 0 0,1 61,100 L 60,92 A 22,22 0 0,1 52,88 L 45,93 A 30,30 0 0,1 41,89 L 46,82 A 22,22 0 0,1 42,74 L 34,73 A 30,30 0 0,1 34,67 L 42,66 A 22,22 0 0,1 46,58 L 41,51 A 30,30 0 0,1 45,47 L 52,52 A 22,22 0 0,1 60,48 Z M 74,70 A 10,10 0 1,0 54,70 A 10,10 0 1,0 74,70 Z"
+      />
+      <path d="M 68,41 L 44,73 L 63,73 L 60,95 L 84,62 L 66,62 Z" fill="white"/>
+    </svg>
   )
 }

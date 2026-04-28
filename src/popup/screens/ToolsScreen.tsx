@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { CSSProperties } from 'react'
+import type { CSSProperties, SyntheticEvent } from 'react'
 import type { Tool, Category } from '@t/index'
 import { T, getCatHue, getCatIconKey } from '../tokens'
 import { Icon, IconPaths, type IconKey } from '../icons'
@@ -47,13 +47,33 @@ interface ToolCardProps {
   onToggleFavorite: () => void
 }
 
+function getFaviconUrl(url: string): string {
+  try {
+    const domain = new URL(url).hostname
+    return `https://www.google.com/s2/favicons?domain=${domain}&sz=64`
+  } catch {
+    return ''
+  }
+}
+
 function ToolCard({ tool, categories, onEdit, onDelete, onToggleFavorite }: ToolCardProps) {
-  const [hovered, setHovered] = useState(false)
+  const [hovered,    setHovered]    = useState(false)
+  const [imgFailed,  setImgFailed]  = useState(false)
 
   // Primary category for colour (first tag id)
   const primaryCat = categories.find(c => c.id === tool.tags[0])
-  const hue = getCatHue(primaryCat?.name ?? '')
+  const hue     = getCatHue(primaryCat?.name ?? '')
   const iconKey = getCatIconKey(primaryCat?.name ?? '') as IconKey
+
+  const faviconSrc  = tool.url ? getFaviconUrl(tool.url) : ''
+  const showFavicon = faviconSrc && !imgFailed
+
+  function handleImgError(e: SyntheticEvent<HTMLImageElement>) {
+    // Google returns a 1×1 grey pixel for unknown domains — treat tiny images as failures
+    const img = e.currentTarget
+    if (img.naturalWidth <= 16 && img.naturalHeight <= 16) setImgFailed(true)
+    else if (img.naturalWidth === 0) setImgFailed(true)
+  }
 
   return (
     <GlassCard>
@@ -62,17 +82,36 @@ function ToolCard({ tool, categories, onEdit, onDelete, onToggleFavorite }: Tool
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
       >
-        {/* Category icon tile */}
-        <div style={{
-          width: 32, height: 32, borderRadius: 8, flexShrink: 0,
-          background: `linear-gradient(135deg, oklch(0.92 0.08 ${hue}) 0%, oklch(0.82 0.13 ${hue}) 100%)`,
-          border: `1px solid oklch(0.75 0.15 ${hue} / 0.4)`,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: `oklch(0.4 0.18 ${hue})`,
-          boxShadow: `inset 0 1px 0 rgba(255,255,255,0.6), 0 2px 4px oklch(0.6 0.15 ${hue} / 0.2)`,
-        }}>
-          <Icon d={IconPaths[iconKey] ?? IconPaths.tools} size={15} />
-        </div>
+        {/* Favicon tile — falls back to category icon */}
+        {showFavicon ? (
+          <div style={{
+            width: 32, height: 32, borderRadius: 8, flexShrink: 0,
+            background: 'rgba(255,255,255,0.85)',
+            border: '1px solid rgba(50,60,110,0.09)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), 0 2px 4px rgba(0,0,0,0.06)',
+          }}>
+            <img
+              src={faviconSrc}
+              alt=""
+              width={20} height={20}
+              onLoad={handleImgError}
+              onError={() => setImgFailed(true)}
+              style={{ display: 'block', objectFit: 'contain', borderRadius: 3 }}
+            />
+          </div>
+        ) : (
+          <div style={{
+            width: 32, height: 32, borderRadius: 8, flexShrink: 0,
+            background: `linear-gradient(135deg, oklch(0.92 0.08 ${hue}) 0%, oklch(0.82 0.13 ${hue}) 100%)`,
+            border: `1px solid oklch(0.75 0.15 ${hue} / 0.4)`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: `oklch(0.4 0.18 ${hue})`,
+            boxShadow: `inset 0 1px 0 rgba(255,255,255,0.6), 0 2px 4px oklch(0.6 0.15 ${hue} / 0.2)`,
+          }}>
+            <Icon d={IconPaths[iconKey] ?? IconPaths.tools} size={15} />
+          </div>
+        )}
 
         {/* Content */}
         <div style={{ flex: 1, minWidth: 0 }}>
