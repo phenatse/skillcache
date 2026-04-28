@@ -21,3 +21,6 @@ Most professionals accumulate hundreds of tools across their career — platform
 
 # Status
 🚧 Functional but early — core features work, more on the way.
+
+# How to use
+Go to github.com/phenatse/skillcache → click the green Code button → Download ZIP → unzip it → open chrome://extensions → turn on Developer mode → click Load unpacked → select the dist folder inside.
