@@ -40,7 +40,7 @@ export function Header({ totalCount, onAdd, lastSaved, storageUsage, right }: He
             Skill Cache
           </span>
           <span style={{ fontSize: 9, fontFamily: T.mono, color: storageWarn ? (storageFull ? 'oklch(0.58 0.2 25)' : 'oklch(0.6 0.18 55)') : T.ink3, marginTop: 2, letterSpacing: 0.5 }}>
-            v1.0 · {totalCount} saved{syncLabel ? ` · ${syncLabel}` : ''}{storageLabel ? ` ${storageLabel}` : ''}
+            v1.2 · {totalCount} saved{syncLabel ? ` · ${syncLabel}` : ''}{storageLabel ? ` ${storageLabel}` : ''}
           </span>
         </div>
       </div>
