@@ -10,7 +10,7 @@ Most professionals accumulate hundreds of tools across their career — platform
 - Career Portability — Your toolkit is yours, not your employer's. Export your full stack as JSON and bring it to your next role
 - Custom Categories — Organise everything by how you actually work: UAT, Events, Marketing, Community, Dev, or whatever fits your workflow
 
-# What's new
+# What's new in version 1.2
 
 - Storage is now chrome.storage.sync — data follows your Chrome account across devices. Load the extension on devices (while signed into Chrome) and your tools/prompts will be there.
 - Migration is automatic — first time this version loads, it checks if you had anything in local storage and copies it over, then clears the old data. Nothing lost.
