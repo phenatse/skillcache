@@ -1,0 +1,23 @@
+# Skill Cache
+A browser extension for professionals who context-switch for a living.
+Skill Cache is a personal toolkit manager that lives in your browser — built for people who work across multiple roles, teams, and jobs and need their tools, prompts, and knowledge to travel with them.
+
+# What it does
+Most professionals accumulate hundreds of tools across their career — platforms, APIs, AI workflows, internal systems — and lose track of them the moment they switch jobs. Skill Cache solves that by giving you a single, fast-access hub that remembers everything you've ever worked with.
+
+- Tool Memory — Log every tool you've used, with context: what it was for, where you used it, and whether you'd use it again
+- Prompt Library — Save and reuse your best prompts, tagged by LLM (Claude, GPT, Gemini) and use case so nothing gets lost in a chat history
+- Career Portability — Your toolkit is yours, not your employer's. Export your full stack as JSON and bring it to your next role
+- Custom Categories — Organise everything by how you actually work: UAT, Events, Marketing, Community, Dev, or whatever fits your workflow
+
+
+# Built with
+
+- Vanilla JS, HTML, CSS — no framework dependencies
+- Chrome Extension Manifest V3
+- Chrome Local Storage
+- Designed in Claude Design, built with Claude Code
+
+
+# Status
+🚧 Functional but early — core features work, more on the way.
