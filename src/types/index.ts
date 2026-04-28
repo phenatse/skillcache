@@ -49,6 +49,14 @@ export interface UIState {
   lastSaved?: string    // ISO string
 }
 
+// ─── Storage ──────────────────────────────────────────────────────────────────
+
+export interface StorageUsage {
+  used:  number  // bytes
+  quota: number  // bytes (102400 for sync)
+  pct:   number  // 0–1
+}
+
 // ─── Misc ──────────────────────────────────────────────────────────────────────
 
 export type Tab = 'categories' | 'tools' | 'prompts' | 'favorites'

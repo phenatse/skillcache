@@ -7,7 +7,7 @@
 
 import type { Tool, Prompt, Category } from '@t/index'
 import {
-  getAll, initDefaults, getUIState, saveUIState,
+  getAll, initDefaults, getUIState, saveUIState, getStorageUsage,
   saveTool as _saveTool, deleteTool as _deleteTool,
   savePrompt as _savePrompt, deletePrompt as _deletePrompt, incrementPromptUses as _incUses,
   saveCategory as _saveCategory, deleteCategory as _deleteCategory,
@@ -42,4 +42,4 @@ export const categories = {
   remove: (id: string) => _deleteCategory(id),
 }
 
-export { getAll, initDefaults, getUIState, saveUIState }
+export { getAll, initDefaults, getUIState, saveUIState, getStorageUsage }

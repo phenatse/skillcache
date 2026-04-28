@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import type { Tool, Prompt, Category, Tab } from '@t/index'
+import type { Tool, Prompt, Category, Tab, StorageUsage } from '@t/index'
 import { T } from './tokens'
 import { Aurora }       from './components/Aurora'
 import { Header }       from './components/Header'
@@ -27,15 +27,16 @@ export default function App() {
   const [tools,      setTools]      = useState<Tool[]>([])
   const [prompts,    setPrompts]    = useState<Prompt[]>([])
   const [categories, setCategories] = useState<Category[]>([])
-  const [lastSaved,  setLastSaved]  = useState<Date | null>(null)
-  const [loading,    setLoading]    = useState(true)
+  const [lastSaved,    setLastSaved]    = useState<Date | null>(null)
+  const [storageUsage, setStorageUsage] = useState<StorageUsage | null>(null)
+  const [loading,      setLoading]      = useState(true)
 
   // ── Load on mount ────────────────────────────────────────────
   useEffect(() => {
     let mounted = true
     async function load() {
       await api.initDefaults()
-      const [data, ui] = await Promise.all([api.getAll(), api.getUIState()])
+      const [data, ui, usage] = await Promise.all([api.getAll(), api.getUIState(), api.getStorageUsage()])
       if (!mounted) return
       setTools(data.tools)
       setPrompts(data.prompts)
@@ -43,6 +44,7 @@ export default function App() {
       if (ui.activeTab)    setTab(ui.activeTab)
       if (ui.searchQuery)  setSearchQuery(ui.searchQuery)
       if (ui.lastSaved)    setLastSaved(new Date(ui.lastSaved))
+      setStorageUsage(usage)
       setLoading(false)
     }
     load()
@@ -56,10 +58,11 @@ export default function App() {
 
   // ── Refresh after mutations ───────────────────────────────────
   async function refresh() {
-    const data = await api.getAll()
+    const [data, usage] = await Promise.all([api.getAll(), api.getStorageUsage()])
     setTools(data.tools)
     setPrompts(data.prompts)
     setCategories(data.categories)
+    setStorageUsage(usage)
     const ts = new Date()
     setLastSaved(ts)
     api.saveUIState({ lastSaved: ts.toISOString() })
@@ -207,6 +210,7 @@ export default function App() {
         totalCount={tools.length + prompts.length}
         onAdd={() => openAdd(tab === 'prompts' ? 'prompt' : 'tool')}
         lastSaved={lastSaved}
+        storageUsage={storageUsage}
       />
 
       <SearchBar

@@ -1,13 +1,29 @@
 /**
- * storage.ts
- * Chrome local storage CRUD. All exports are async Promises.
- * This is the only file that touches chrome.storage.local directly.
+ * storage.ts — chrome.storage.sync backend
+ *
+ * Stores each entity under its own key to stay within the 8 KB per-item limit
+ * while sharing the 102,400-byte (100 KB) total sync quota across devices.
+ *
+ * Key schema:
+ *   sc_t_{id}  → Tool
+ *   sc_p_{id}  → Prompt
+ *   sc_c_{id}  → Category
+ *   sc_ui      → UIState
+ *
+ * One-time migration: on first load, if sync is empty but chrome.storage.local
+ * has the old single-key format, we copy it over and clear local.
  */
 
 import type { Tool, Prompt, Category, StorageData, UIState } from '@t/index'
 
-const DATA_KEY = 'skillCache'
-const UI_KEY   = 'skillCacheUI'
+const T_PREFIX = 'sc_t_'
+const P_PREFIX = 'sc_p_'
+const C_PREFIX = 'sc_c_'
+const UI_KEY   = 'sc_ui'
+
+// Legacy keys from the old chrome.storage.local format
+const LEGACY_DATA_KEY = 'skillCache'
+const LEGACY_UI_KEY   = 'skillCacheUI'
 
 const DEFAULT_CATEGORIES: Omit<Category, 'createdAt'>[] = [
   { id: 'cat-uat',       name: 'UAT'       },
@@ -62,6 +78,12 @@ const DEFAULT_TOOLS: SeedTool[] = [
   { name: 'Runway',      url: 'https://runwayml.com',      description: 'AI video generation',                        notes: '', usedAt: '', tags: ['cat-ai'] },
 ]
 
+// ─── Key helpers ──────────────────────────────────────────────────────────────
+
+function toolKey(id: string)   { return `${T_PREFIX}${id}` }
+function promptKey(id: string) { return `${P_PREFIX}${id}` }
+function catKey(id: string)    { return `${C_PREFIX}${id}` }
+
 // ─── Utilities ────────────────────────────────────────────────────────────────
 
 export function generateId(): string {
@@ -72,44 +94,85 @@ function now(): string {
   return new Date().toISOString()
 }
 
-// ─── Core ─────────────────────────────────────────────────────────────────────
+// ─── Core read ────────────────────────────────────────────────────────────────
 
 export async function getAll(): Promise<StorageData> {
-  const result = await chrome.storage.local.get(DATA_KEY)
-  return result[DATA_KEY] ?? { tools: [], prompts: [], categories: [] }
+  const all = await chrome.storage.sync.get(null)
+  const tools      = Object.entries(all).filter(([k]) => k.startsWith(T_PREFIX)).map(([, v]) => v as Tool)
+  const prompts    = Object.entries(all).filter(([k]) => k.startsWith(P_PREFIX)).map(([, v]) => v as Prompt)
+  const categories = Object.entries(all).filter(([k]) => k.startsWith(C_PREFIX)).map(([, v]) => v as Category)
+  return { tools, prompts, categories }
 }
 
-export async function saveAll(data: StorageData): Promise<void> {
-  await chrome.storage.local.set({ [DATA_KEY]: data })
+// Writes (or overwrites) every entity in data. Also removes sync keys for
+// entities no longer present. Used only for seeding and cascade deletes.
+async function saveAll(data: StorageData): Promise<void> {
+  const all = await chrome.storage.sync.get(null)
+
+  const toRemove: string[] = Object.keys(all).filter(k => {
+    if (k.startsWith(T_PREFIX)) return !data.tools.find(t => toolKey(t.id) === k)
+    if (k.startsWith(P_PREFIX)) return !data.prompts.find(p => promptKey(p.id) === k)
+    if (k.startsWith(C_PREFIX)) return !data.categories.find(c => catKey(c.id) === k)
+    return false
+  })
+
+  const toSet: Record<string, unknown> = {}
+  data.tools.forEach(t      => { toSet[toolKey(t.id)]   = t })
+  data.prompts.forEach(p    => { toSet[promptKey(p.id)] = p })
+  data.categories.forEach(c => { toSet[catKey(c.id)]    = c })
+
+  if (toRemove.length)            await chrome.storage.sync.remove(toRemove)
+  if (Object.keys(toSet).length)  await chrome.storage.sync.set(toSet)
 }
 
-/** Seeds default categories + starter tools on first install. Safe to call on every load. */
+// ─── Init / migration ─────────────────────────────────────────────────────────
+
+/** On first load: migrate from old local format if present, otherwise seed defaults. */
 export async function initDefaults(): Promise<void> {
-  const data = await getAll()
-  if (data.categories.length === 0) {
-    data.categories = DEFAULT_CATEGORIES.map(c => ({ ...c, createdAt: now() }))
-    data.tools = DEFAULT_TOOLS.map(t => ({
+  const syncAll   = await chrome.storage.sync.get(null)
+  const hasSyncData = Object.keys(syncAll).some(k => k.startsWith(C_PREFIX))
+  if (hasSyncData) return
+
+  // Try to migrate data from the old chrome.storage.local format
+  const local = await chrome.storage.local.get([LEGACY_DATA_KEY, LEGACY_UI_KEY])
+  const legacyData = local[LEGACY_DATA_KEY] as StorageData | undefined
+
+  if (legacyData?.categories?.length) {
+    await saveAll(legacyData)
+    if (local[LEGACY_UI_KEY]) {
+      await chrome.storage.sync.set({ [UI_KEY]: local[LEGACY_UI_KEY] })
+    }
+    await chrome.storage.local.remove([LEGACY_DATA_KEY, LEGACY_UI_KEY])
+    return
+  }
+
+  // Fresh install — seed defaults
+  const seeded: StorageData = {
+    categories: DEFAULT_CATEGORIES.map(c => ({ ...c, createdAt: now() })),
+    tools: DEFAULT_TOOLS.map(t => ({
       ...t,
       id:        generateId(),
       type:      'tool' as const,
       favorite:  false,
       createdAt: now(),
       updatedAt: now(),
-    }))
-    await saveAll(data)
+    })),
+    prompts: [],
   }
+  await saveAll(seeded)
 }
 
 // ─── Tools ────────────────────────────────────────────────────────────────────
 
 export async function saveTool(toolData: Partial<Tool> & { name: string }): Promise<Tool[]> {
-  const data = await getAll()
-  const idx  = data.tools.findIndex(t => t.id === toolData.id)
+  let tool: Tool
 
-  if (idx >= 0) {
-    data.tools[idx] = { ...data.tools[idx], ...toolData, updatedAt: now() }
+  if (toolData.id) {
+    const existing = await chrome.storage.sync.get(toolKey(toolData.id))
+    const current  = (existing[toolKey(toolData.id)] ?? {}) as Partial<Tool>
+    tool = { ...current, ...toolData, updatedAt: now() } as Tool
   } else {
-    data.tools.push({
+    tool = {
       id:          generateId(),
       type:        'tool',
       name:        toolData.name,
@@ -121,17 +184,16 @@ export async function saveTool(toolData: Partial<Tool> & { name: string }): Prom
       favorite:    toolData.favorite    ?? false,
       createdAt:   now(),
       updatedAt:   now(),
-    })
+    }
   }
 
-  await saveAll(data)
+  await chrome.storage.sync.set({ [toolKey(tool.id)]: tool })
+  const data = await getAll()
   return data.tools
 }
 
 export async function deleteTool(id: string): Promise<void> {
-  const data = await getAll()
-  data.tools = data.tools.filter(t => t.id !== id)
-  await saveAll(data)
+  await chrome.storage.sync.remove(toolKey(id))
 }
 
 // ─── Prompts ──────────────────────────────────────────────────────────────────
@@ -139,41 +201,42 @@ export async function deleteTool(id: string): Promise<void> {
 export async function savePrompt(
   promptData: Partial<Prompt> & { title: string; text: string },
 ): Promise<Prompt[]> {
-  const data = await getAll()
-  const idx  = data.prompts.findIndex(p => p.id === promptData.id)
+  let prompt: Prompt
 
-  if (idx >= 0) {
-    data.prompts[idx] = { ...data.prompts[idx], ...promptData, updatedAt: now() }
+  if (promptData.id) {
+    const existing = await chrome.storage.sync.get(promptKey(promptData.id))
+    const current  = (existing[promptKey(promptData.id)] ?? {}) as Partial<Prompt>
+    prompt = { ...current, ...promptData, updatedAt: now() } as Prompt
   } else {
-    data.prompts.push({
+    prompt = {
       id:        generateId(),
       type:      'prompt',
       title:     promptData.title,
       text:      promptData.text,
-      llm:       promptData.llm   ?? '',
-      tags:      promptData.tags  ?? [],
-      uses:      promptData.uses  ?? 0,
+      llm:       promptData.llm      ?? '',
+      tags:      promptData.tags     ?? [],
+      uses:      promptData.uses     ?? 0,
+      favorite:  promptData.favorite ?? false,
       createdAt: now(),
       updatedAt: now(),
-    })
+    }
   }
 
-  await saveAll(data)
+  await chrome.storage.sync.set({ [promptKey(prompt.id)]: prompt })
+  const data = await getAll()
   return data.prompts
 }
 
 export async function deletePrompt(id: string): Promise<void> {
-  const data = await getAll()
-  data.prompts = data.prompts.filter(p => p.id !== id)
-  await saveAll(data)
+  await chrome.storage.sync.remove(promptKey(id))
 }
 
 export async function incrementPromptUses(id: string): Promise<void> {
-  const data   = await getAll()
-  const prompt = data.prompts.find(p => p.id === id)
+  const existing = await chrome.storage.sync.get(promptKey(id))
+  const prompt   = existing[promptKey(id)] as Prompt | undefined
   if (prompt) {
     prompt.uses = (prompt.uses ?? 0) + 1
-    await saveAll(data)
+    await chrome.storage.sync.set({ [promptKey(id)]: prompt })
   }
 }
 
@@ -182,36 +245,57 @@ export async function incrementPromptUses(id: string): Promise<void> {
 export async function saveCategory(
   catData: Partial<Category> & { name: string },
 ): Promise<Category[]> {
-  const data = await getAll()
-  const idx  = data.categories.findIndex(c => c.id === catData.id)
+  let cat: Category
 
-  if (idx >= 0) {
-    data.categories[idx] = { ...data.categories[idx], ...catData }
+  if (catData.id) {
+    const existing = await chrome.storage.sync.get(catKey(catData.id))
+    const current  = (existing[catKey(catData.id)] ?? {}) as Partial<Category>
+    cat = { ...current, ...catData } as Category
   } else {
-    data.categories.push({ id: generateId(), name: catData.name, createdAt: now() })
+    cat = { id: generateId(), name: catData.name, createdAt: now() }
   }
 
-  await saveAll(data)
+  await chrome.storage.sync.set({ [catKey(cat.id)]: cat })
+  const data = await getAll()
   return data.categories
 }
 
 export async function deleteCategory(id: string): Promise<void> {
+  // Remove the category key
+  await chrome.storage.sync.remove(catKey(id))
+
+  // Cascade: strip this category id from all tools and prompts that reference it
   const data = await getAll()
-  data.categories = data.categories.filter(c => c.id !== id)
-  // Cascade — remove the id from every entry's tag list
-  data.tools   = data.tools.map(t   => ({ ...t, tags: t.tags.filter(tag => tag !== id) }))
-  data.prompts = data.prompts.map(p => ({ ...p, tags: p.tags.filter(tag => tag !== id) }))
-  await saveAll(data)
+  const affectedTools   = data.tools.filter(t => t.tags.includes(id))
+  const affectedPrompts = data.prompts.filter(p => p.tags.includes(id))
+
+  const updates: Record<string, unknown> = {}
+  affectedTools.forEach(t => {
+    updates[toolKey(t.id)]   = { ...t, tags: t.tags.filter(tag => tag !== id) }
+  })
+  affectedPrompts.forEach(p => {
+    updates[promptKey(p.id)] = { ...p, tags: p.tags.filter(tag => tag !== id) }
+  })
+
+  if (Object.keys(updates).length) await chrome.storage.sync.set(updates)
 }
 
-// ─── UI state persistence ─────────────────────────────────────────────────────
+// ─── UI state ─────────────────────────────────────────────────────────────────
 
 export async function getUIState(): Promise<Partial<UIState>> {
-  const result = await chrome.storage.local.get(UI_KEY)
+  const result = await chrome.storage.sync.get(UI_KEY)
   return result[UI_KEY] ?? {}
 }
 
 export async function saveUIState(state: Partial<UIState>): Promise<void> {
   const current = await getUIState()
-  await chrome.storage.local.set({ [UI_KEY]: { ...current, ...state } })
+  await chrome.storage.sync.set({ [UI_KEY]: { ...current, ...state } })
+}
+
+// ─── Storage usage ────────────────────────────────────────────────────────────
+
+export async function getStorageUsage(): Promise<{ used: number; quota: number; pct: number }> {
+  const used  = await chrome.storage.sync.getBytesInUse(null)
+  const quota = chrome.storage.sync.QUOTA_BYTES  // 102400
+  return { used, quota, pct: used / quota }
 }

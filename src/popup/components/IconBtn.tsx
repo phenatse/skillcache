@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import type { ReactNode, CSSProperties } from 'react'
 import { T } from '../tokens'
 
 interface IconBtnProps {
@@ -8,10 +8,11 @@ interface IconBtnProps {
   size?: number
   radius?: number
   title?: string
+  style?: CSSProperties
 }
 
 /** Small icon button — plain glass or indigo-gradient (glow=true). */
-export function IconBtn({ children, onClick, glow = false, size = 28, radius = 8, title }: IconBtnProps) {
+export function IconBtn({ children, onClick, glow = false, size = 28, radius = 8, title, style: extraStyle }: IconBtnProps) {
   return (
     <button
       onClick={onClick}
@@ -30,6 +31,7 @@ export function IconBtn({ children, onClick, glow = false, size = 28, radius = 8
           ? `0 4px 12px ${T.indigoDeep}55, inset 0 1px 0 rgba(255,255,255,0.3)`
           : 'inset 0 1px 0 rgba(255,255,255,0.9), 0 1px 2px rgba(50,60,110,0.06)',
         transition: 'opacity 120ms',
+        ...extraStyle,
       }}
       onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.opacity = '0.8' }}
       onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.opacity = '1' }}
