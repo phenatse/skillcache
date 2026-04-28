@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<!--
+  Skill Cache — Icon Generator
+  ─────────────────────────────
+  Open this file in Chrome. It draws the icon at 128, 48, and 16 px
+  using Canvas, shows live previews, then downloads all three PNGs
+  when you click the button.
+
+  After downloading:
+    1. Move icon16.png, icon48.png, icon128.png into the icons/ folder.
+    2. Run `npm run build` to pick up the updated manifest.
+-->
+<head>
+  <meta charset="UTF-8">
+  <title>Skill Cache — Icon Generator</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
+      background: #f4f3fb;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px;
+      gap: 32px;
+      min-height: 100vh;
+      margin: 0;
+      color: rgba(20,22,40,0.9);
+    }
+    h1 { font-size: 22px; font-weight: 700; margin: 0; letter-spacing: -0.3px; }
+    p  { font-size: 14px; color: rgba(50,56,90,0.68); margin: 0; }
+    .previews {
+      display: flex;
+      align-items: flex-end;
+      gap: 32px;
+    }
+    .preview-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+    .preview-item canvas {
+      border-radius: 8px;
+      box-shadow: 0 8px 24px -6px rgba(50,60,110,0.25);
+    }
+    .size-label {
+      font-size: 11px;
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
+      color: rgba(80,88,120,0.55);
+      letter-spacing: 0.5px;
+    }
+    button {
+      padding: 12px 28px;
+      background: linear-gradient(180deg, #5B6CFF 0%, #4452E6 100%);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(68,82,230,0.4), inset 0 1px 0 rgba(255,255,255,0.25);
+      letter-spacing: -0.1px;
+    }
+    button:hover { opacity: 0.88; }
+    .instructions {
+      background: white;
+      border: 1px solid rgba(50,60,110,0.09);
+      border-radius: 12px;
+      padding: 20px 24px;
+      max-width: 480px;
+      width: 100%;
+    }
+    .instructions h2 { font-size: 14px; margin: 0 0 10px; }
+    .instructions ol  { font-size: 13px; color: rgba(50,56,90,0.75); padding-left: 18px; line-height: 2; margin: 0; }
+    code {
+      font-family: ui-monospace, monospace;
+      font-size: 12px;
+      background: rgba(91,108,255,0.08);
+      padding: 1px 5px;
+      border-radius: 4px;
+      color: #4452E6;
+    }
+  </style>
+</head>
+<body>
+
+  <div style="text-align:center; display:flex; flex-direction:column; gap:6px;">
+    <h1>Skill Cache — Icon Generator</h1>
+    <p>Live canvas preview · click to download all three sizes as PNG</p>
+  </div>
+
+  <div class="previews" id="previews"></div>
+
+  <button onclick="downloadAll()">⬇ Download All Sizes</button>
+
+  <div class="instructions">
+    <h2>After downloading</h2>
+    <ol>
+      <li>Move the three PNGs into <code>icons/</code></li>
+      <li>Run <code>npm run build</code></li>
+      <li>Refresh the extension in <code>chrome://extensions</code></li>
+    </ol>
+  </div>
+
+  <script>
+    // ── Design constants ──────────────────────────────────────────
+    const INDIGO = '#5B6CFF'
+    const CYAN   = '#1FB3C4'
+    const SIZES  = [128, 48, 16]
+
+    // ── Draw the icon at any size ─────────────────────────────────
+    function drawIcon(size) {
+      const canvas = document.createElement('canvas')
+      canvas.width  = size
+      canvas.height = size
+      const ctx = canvas.getContext('2d')
+      const f = size / 128   // scale factor from 128-px master
+
+      // — Background gradient ———————————————————————————
+      const bg = ctx.createLinearGradient(0, 0, size, size)
+      bg.addColorStop(0, INDIGO)
+      bg.addColorStop(1, CYAN)
+      ctx.beginPath()
+      rrect(ctx, 0, 0, size, size, 26 * f)
+      ctx.fillStyle = bg
+      ctx.fill()
+
+      // — Top shine —————————————————————————————————————
+      const shine = ctx.createLinearGradient(0, 0, 0, 70 * f)
+      shine.addColorStop(0, 'rgba(255,255,255,0.22)')
+      shine.addColorStop(1, 'rgba(255,255,255,0)')
+      ctx.save()
+      ctx.beginPath()
+      rrect(ctx, 0, 0, size, size, 26 * f)
+      ctx.clip()
+      ctx.fillStyle = shine
+      ctx.fillRect(0, 0, size, 70 * f)
+      ctx.restore()
+
+      // — Gear (center 64,70 — even-odd so hub is hollow) ————————
+      drawGear(ctx, 64, 70, 30, 22, 10, 8, f)
+      ctx.fillStyle = 'rgba(255,255,255,0.20)'
+      ctx.fill('evenodd')
+
+      // — Lightning bolt (centered over gear) ————————————————————
+      const bolt = [[68,41],[44,73],[63,73],[60,95],[84,62],[66,62]]
+      ctx.beginPath()
+      bolt.forEach(([x, y], i) => {
+        i === 0 ? ctx.moveTo(x * f, y * f) : ctx.lineTo(x * f, y * f)
+      })
+      ctx.closePath()
+      ctx.fillStyle = 'white'
+      ctx.fill()
+
+      return canvas
+    }
+
+    // ── Gear path (outer teeth + hub cutout for evenodd) ─────────
+    function drawGear(ctx, cx, cy, outerR, innerR, hubR, teeth, f) {
+      const step = (Math.PI * 2) / teeth
+      const t    = step * 0.28          // tooth half-angle
+      const CX = cx * f, CY = cy * f
+      const RO = outerR * f, RI = innerR * f, RH = hubR * f
+
+      ctx.beginPath()
+      for (let i = 0; i < teeth; i++) {
+        const a  = i * step - Math.PI / 2
+        const v1 = a - t * 0.85
+        const t1 = a - t * 0.50
+        const t2 = a + t * 0.50
+        const v2 = a + t * 0.85
+        const v3 = (i + 1) * step - Math.PI / 2 - t * 0.85
+
+        if (i === 0) ctx.moveTo(CX + RI * Math.cos(v1), CY + RI * Math.sin(v1))
+        else         ctx.lineTo(CX + RI * Math.cos(v1), CY + RI * Math.sin(v1))
+
+        ctx.lineTo(CX + RO * Math.cos(t1), CY + RO * Math.sin(t1))
+        ctx.arc(CX, CY, RO, t1, t2, false)
+        ctx.lineTo(CX + RI * Math.cos(v2), CY + RI * Math.sin(v2))
+        ctx.arc(CX, CY, RI, v2, v3, false)
+      }
+      ctx.closePath()
+      // Hub hole — counterclockwise so evenodd punches it out
+      ctx.arc(CX, CY, RH, 0, Math.PI * 2, true)
+    }
+
+    // ── Rounded rectangle path helper ────────────────────────────
+    function rrect(ctx, x, y, w, h, r) {
+      r = Math.min(r, w / 2, h / 2)
+      ctx.moveTo(x + r, y)
+      ctx.lineTo(x + w - r, y)
+      ctx.arcTo(x + w, y,     x + w, y + r,     r)
+      ctx.lineTo(x + w, y + h - r)
+      ctx.arcTo(x + w, y + h, x + w - r, y + h, r)
+      ctx.lineTo(x + r, y + h)
+      ctx.arcTo(x,     y + h, x,       y + h - r, r)
+      ctx.lineTo(x, y + r)
+      ctx.arcTo(x, y,         x + r,   y,         r)
+      ctx.closePath()
+    }
+
+    // ── Render previews ───────────────────────────────────────────
+    const container = document.getElementById('previews')
+
+    SIZES.forEach(size => {
+      const canvas = drawIcon(size)
+
+      // Show smaller canvases at a readable display size
+      const displaySize = Math.max(size, 64)
+      canvas.style.width  = displaySize + 'px'
+      canvas.style.height = displaySize + 'px'
+      canvas.style.imageRendering = size < 64 ? 'pixelated' : 'auto'
+
+      const item = document.createElement('div')
+      item.className = 'preview-item'
+
+      const label = document.createElement('span')
+      label.className = 'size-label'
+      label.textContent = `${size}×${size}`
+
+      item.appendChild(canvas)
+      item.appendChild(label)
+      container.appendChild(item)
+    })
+
+    // ── Download all three PNGs ───────────────────────────────────
+    function downloadAll() {
+      SIZES.forEach((size, i) => {
+        // Stagger downloads slightly so the browser doesn't block them
+        setTimeout(() => {
+          const canvas = drawIcon(size)
+          const a = document.createElement('a')
+          a.download = `icon${size}.png`
+          a.href = canvas.toDataURL('image/png')
+          document.body.appendChild(a)
+          a.click()
+          document.body.removeChild(a)
+        }, i * 150)
+      })
+    }
+  </script>
+</body>
+</html>

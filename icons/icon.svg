@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="128" y2="128" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"   stop-color="#5B6CFF"/>
+      <stop offset="100%" stop-color="#1FB3C4"/>
+    </linearGradient>
+    <linearGradient id="shine" x1="0" y1="0" x2="0" y2="70" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"   stop-color="white" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="white" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="128" height="128" rx="26" fill="url(#bg)"/>
+  <rect width="128" height="70"  rx="26" fill="url(#shine)"/>
+
+  <!--
+    Gear — 8 teeth, center (64,70), outer R=30, inner R=22, hub R=10.
+    Tooth half-angle t = 0.28 * (2π/8). Outer arcs sweep-flag=1 (CW),
+    valley arcs sweep-flag=1 (CW). Hub circle goes CCW for evenodd cutout.
+  -->
+  <path fill-rule="evenodd" fill="rgba(255,255,255,0.20)"
+    d="
+    M 60,48 L 61,40 A 30,30 0 0,1 67,40 L 68,48 A 22,22 0 0,1 76,52
+    L 83,47 A 30,30 0 0,1 87,51 L 82,58 A 22,22 0 0,1 86,66
+    L 94,67 A 30,30 0 0,1 94,73 L 86,74 A 22,22 0 0,1 82,82
+    L 87,89 A 30,30 0 0,1 83,93 L 76,88 A 22,22 0 0,1 68,92
+    L 67,100 A 30,30 0 0,1 61,100 L 60,92 A 22,22 0 0,1 52,88
+    L 45,93 A 30,30 0 0,1 41,89 L 46,82 A 22,22 0 0,1 42,74
+    L 34,73 A 30,30 0 0,1 34,67 L 42,66 A 22,22 0 0,1 46,58
+    L 41,51 A 30,30 0 0,1 45,47 L 52,52 A 22,22 0 0,1 60,48 Z
+    M 74,70 A 10,10 0 1,0 54,70 A 10,10 0 1,0 74,70 Z
+    "/>
+
+  <!--
+    Lightning bolt — centered over the gear.
+    6-point polygon scaled from the original top-right bolt (×1.5, recentered to 64,68).
+  -->
+  <path d="M 68,41 L 44,73 L 63,73 L 60,95 L 84,62 L 66,62 Z" fill="white"/>
+</svg>

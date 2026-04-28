@@ -1,0 +1,68 @@
+import type { ReactNode } from 'react'
+import { T } from '../tokens'
+import { Icon, IconPaths } from '../icons'
+import { IconBtn } from './IconBtn'
+
+interface HeaderProps {
+  totalCount: number
+  onAdd: () => void
+  right?: ReactNode
+}
+
+/** Top bar: logo mark, wordmark, item count, action buttons. */
+export function Header({ totalCount, onAdd, right }: HeaderProps) {
+  return (
+    <div style={{
+      height: 52, padding: '0 14px',
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      borderBottom: `1px solid ${T.line}`,
+      background: 'rgba(255,255,255,0.55)',
+      backdropFilter: 'blur(16px) saturate(180%)',
+      WebkitBackdropFilter: 'blur(16px) saturate(180%)',
+      position: 'relative', zIndex: 2,
+      flexShrink: 0,
+    }}>
+      {/* Logo + wordmark */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <LogoMark />
+        <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: T.ink, letterSpacing: -0.2 }}>
+            Skill Cache
+          </span>
+          <span style={{ fontSize: 9, fontFamily: T.mono, color: T.ink3, marginTop: 2, letterSpacing: 0.5 }}>
+            v1.0 · {totalCount} saved
+          </span>
+        </div>
+      </div>
+
+      {/* Right actions */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        {right}
+        <IconBtn title="Add new entry" glow onClick={onAdd}>
+          <Icon d={IconPaths.plus} size={14} stroke="#fff" />
+        </IconBtn>
+      </div>
+    </div>
+  )
+}
+
+function LogoMark() {
+  return (
+    <div style={{
+      width: 22, height: 22, borderRadius: 6,
+      background: `linear-gradient(135deg, ${T.indigo} 0%, ${T.cyan} 100%)`,
+      boxShadow: `0 0 0 1px rgba(255,255,255,0.12), 0 4px 12px ${T.indigoDeep}66`,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      flexShrink: 0,
+    }}>
+      {/* Small white angled glyph */}
+      <div style={{
+        width: 10, height: 10,
+        border: '1.5px solid rgba(255,255,255,0.95)',
+        borderRight: 'none', borderTop: 'none',
+        borderRadius: 1,
+        transform: 'rotate(-45deg) translate(1px, -1px)',
+      }} />
+    </div>
+  )
+}

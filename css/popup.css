@@ -1,0 +1,348 @@
+/*
+ * popup.css
+ * Placeholder stylesheet — structure and layout only.
+ * Style tokens (colours, typography, spacing) will be applied separately.
+ *
+ * Class naming convention: BEM-ish
+ *   .block
+ *   .block__element
+ *   .block--modifier
+ */
+
+/* ── Reset ─────────────────────────────────────────────────────────────────── */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ── Extension popup size ──────────────────────────────────────────────────── */
+
+body {
+  width: 420px;
+  min-height: 560px;
+  max-height: 600px;
+  display: flex;
+  flex-direction: column;
+  font-family: sans-serif;
+  font-size: 14px;
+  overflow: hidden;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────────── */
+
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  flex-shrink: 0;
+}
+
+.app-title {
+  font-size: 16px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.search-wrapper {
+  flex: 1;
+}
+
+.search-input {
+  width: 100%;
+  padding: 4px 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.header-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+/* ── Main content ──────────────────────────────────────────────────────────── */
+
+.main-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+}
+
+/* ── Bottom nav ────────────────────────────────────────────────────────────── */
+
+.bottom-nav {
+  display: flex;
+  border-top: 1px solid #ddd;
+  flex-shrink: 0;
+}
+
+.nav-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 4px;
+  gap: 2px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 10px;
+}
+
+.nav-btn__icon {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.nav-btn--active {
+  font-weight: 700;
+}
+
+/* ── Cards ─────────────────────────────────────────────────────────────────── */
+
+.card {
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 10px;
+  margin-bottom: 8px;
+}
+
+.card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.card__title {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.card__title a {
+  text-decoration: none;
+  color: inherit;
+}
+
+.card__actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.card__description,
+.card__meta,
+.card__notes {
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.card__prompt-text {
+  font-size: 12px;
+  margin-top: 6px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 80px;
+  overflow-y: auto;
+}
+
+.card__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+/* ── Tags ──────────────────────────────────────────────────────────────────── */
+
+.tag {
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 99px;
+  background: #eee;
+}
+
+/* ── Buttons ───────────────────────────────────────────────────────────────── */
+
+.btn {
+  padding: 6px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  background: #fff;
+}
+
+.btn-primary {
+  background: #333;
+  color: #fff;
+  border-color: #333;
+}
+
+.btn-secondary {
+  background: #fff;
+  color: #333;
+}
+
+.btn-ghost {
+  border: none;
+  background: none;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 4px 6px;
+}
+
+.btn-icon {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 2px;
+  line-height: 1;
+}
+
+/* ── Forms ─────────────────────────────────────────────────────────────────── */
+
+.entry-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.entry-form--inline {
+  flex-direction: row;
+  align-items: center;
+}
+
+.form-label {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.required {
+  color: red;
+}
+
+.form-input {
+  width: 100%;
+  padding: 5px 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.form-textarea--large {
+  min-height: 120px;
+}
+
+.form-select {
+  appearance: auto;
+}
+
+.form-fieldset {
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 8px;
+}
+
+.checkbox-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.form-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.form-error {
+  color: red;
+  font-size: 12px;
+}
+
+/* ── Categories view ───────────────────────────────────────────────────────── */
+
+.category-list {
+  list-style: none;
+  margin-bottom: 12px;
+}
+
+.category-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.category-item__name {
+  font-weight: 600;
+  flex: 1;
+}
+
+.category-item__usage {
+  font-size: 11px;
+  color: #888;
+}
+
+.category-item__actions {
+  display: flex;
+  gap: 4px;
+}
+
+/* ── Add picker ────────────────────────────────────────────────────────────── */
+
+.add-picker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 24px 0;
+}
+
+.add-picker__title {
+  font-size: 15px;
+}
+
+.add-picker__options {
+  display: flex;
+  gap: 12px;
+}
+
+/* ── Empty state ───────────────────────────────────────────────────────────── */
+
+.empty-state {
+  text-align: center;
+  color: #999;
+  padding: 32px 0;
+  font-size: 13px;
+}
+
+/* ── Utility ───────────────────────────────────────────────────────────────── */
+
+.hidden {
+  display: none;
+}

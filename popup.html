@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Skill Cache</title>
+  <link rel="stylesheet" href="css/popup.css">
+</head>
+<body>
+
+  <!-- ── Header ─────────────────────────────────────────────────── -->
+  <header class="app-header">
+    <h1 class="app-title">Skill Cache</h1>
+
+    <!-- Search bar — visible on Tools and Prompts views -->
+    <div class="search-wrapper">
+      <input
+        id="search-input"
+        class="search-input"
+        type="search"
+        placeholder="Search..."
+        aria-label="Search entries"
+      >
+    </div>
+
+    <!-- Import / Export controls -->
+    <div class="header-actions">
+      <button id="btn-export" class="btn btn-ghost" title="Export as JSON">Export</button>
+      <button id="btn-import" class="btn btn-ghost" title="Import from JSON">Import</button>
+      <!-- Hidden file input — triggered programmatically by the Import button -->
+      <input
+        id="import-file-input"
+        type="file"
+        accept=".json,application/json"
+        style="display:none"
+        aria-hidden="true"
+      >
+    </div>
+  </header>
+
+  <!-- ── Main content ──────────────────────────────────────────── -->
+  <!--
+    popup.js dynamically renders the active view's HTML here.
+    All view modules write into this element.
+  -->
+  <main id="main-content" class="main-content" role="main">
+    <!-- Content injected by popup.js -->
+  </main>
+
+  <!-- ── Bottom navigation ─────────────────────────────────────── -->
+  <nav class="bottom-nav" aria-label="Main navigation">
+    <button class="nav-btn nav-btn--active" data-view="tools"      aria-label="Tools">
+      <span class="nav-btn__icon">&#128295;</span>
+      <span class="nav-btn__label">Tools</span>
+    </button>
+
+    <button class="nav-btn" data-view="prompts" aria-label="Prompts">
+      <span class="nav-btn__icon">&#128172;</span>
+      <span class="nav-btn__label">Prompts</span>
+    </button>
+
+    <button class="nav-btn" data-view="categories" aria-label="Categories">
+      <span class="nav-btn__icon">&#127991;</span>
+      <span class="nav-btn__label">Categories</span>
+    </button>
+
+    <button class="nav-btn" data-view="add" aria-label="Add New">
+      <span class="nav-btn__icon">&#43;</span>
+      <span class="nav-btn__label">Add New</span>
+    </button>
+  </nav>
+
+  <script type="module" src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+{
+  "manifest_version": 3,
+  "name": "Skill Cache",
+  "version": "1.0.0",
+  "description": "Personal toolkit manager for tools and prompts",
+  "action": {
+    "default_popup": "index.html"
+  },
+  "permissions": ["storage"],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com"
+  }
+}
