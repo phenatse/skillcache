@@ -12,7 +12,7 @@ Most professionals accumulate hundreds of tools across their career — platform
 
 # What's new
 
-- Storage is now chrome.storage.sync — data follows your Chrome account across devices. Load the extension on your work laptop (while signed into Chrome) and your tools/prompts will be there.
+- Storage is now chrome.storage.sync — data follows your Chrome account across devices. Load the extension on devices (while signed into Chrome) and your tools/prompts will be there.
 - Migration is automatic — first time this version loads, it checks if you had anything in local storage and copies it over, then clears the old data. Nothing lost.
 - Each item stored separately — one key per tool/prompt/category instead of one giant blob, which is what lets us stay under Chrome's 8KB per-item limit.
 
