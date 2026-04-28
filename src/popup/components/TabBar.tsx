@@ -9,9 +9,10 @@ interface TabBarProps {
 }
 
 const TABS: { id: Tab; label: string; icon: keyof typeof IconPaths }[] = [
+  { id: 'categories', label: 'Categories', icon: 'cat'    },
   { id: 'tools',      label: 'Tools',      icon: 'tools'  },
   { id: 'prompts',    label: 'Prompts',    icon: 'prompt' },
-  { id: 'categories', label: 'Categories', icon: 'cat'    },
+  { id: 'favorites',  label: 'Favorites',  icon: 'star'   },
 ]
 
 /** Tab bar — sits between search/filter area and the scrolling content. */

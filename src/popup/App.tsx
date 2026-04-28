@@ -9,6 +9,7 @@ import { TabBar }       from './components/TabBar'
 import { ToolsScreen }      from './screens/ToolsScreen'
 import { PromptsScreen }    from './screens/PromptsScreen'
 import { CategoriesScreen } from './screens/CategoriesScreen'
+import { FavoritesScreen }  from './screens/FavoritesScreen'
 import { AddSheet }         from './screens/AddSheet'
 import { searchTools, searchPrompts } from '@lib/search'
 import * as api from '@lib/api'
@@ -135,6 +136,11 @@ export default function App() {
     await refresh()
   }
 
+  async function handleTogglePromptFavorite(prompt: Prompt) {
+    await api.prompts.save({ ...prompt, favorite: !prompt.favorite })
+    await refresh()
+  }
+
   // ── Prompt actions ────────────────────────────────────────────
   async function handleDeletePrompt(id: string) {
     await api.prompts.remove(id)
@@ -177,9 +183,10 @@ export default function App() {
   }
 
   const searchPlaceholders: Record<Tab, string> = {
+    categories: 'Filter categories…',
     tools:      'Search tools, prompts, tags…',
     prompts:    'Search prompts by title or model…',
-    categories: 'Filter categories…',
+    favorites:  'Search favorites…',
   }
 
   return (
@@ -243,6 +250,7 @@ export default function App() {
             onEdit={openEdit}
             onDelete={handleDeletePrompt}
             onCopy={handleCopyPrompt}
+            onToggleFavorite={handleTogglePromptFavorite}
           />
         )}
         {tab === 'categories' && (
@@ -253,6 +261,20 @@ export default function App() {
             onFilter={handleFilterByCategory}
             onDelete={handleDeleteCategory}
             onSave={handleSaveCategory}
+          />
+        )}
+        {tab === 'favorites' && (
+          <FavoritesScreen
+            tools={tools}
+            prompts={prompts}
+            categories={categories}
+            onEditTool={openEdit}
+            onDeleteTool={handleDeleteTool}
+            onToggleToolFavorite={handleToggleFavorite}
+            onEditPrompt={openEdit}
+            onDeletePrompt={handleDeletePrompt}
+            onCopyPrompt={handleCopyPrompt}
+            onTogglePromptFavorite={handleTogglePromptFavorite}
           />
         )}
       </div>

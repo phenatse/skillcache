@@ -12,9 +12,10 @@ interface PromptsScreenProps {
   onEdit: (prompt: Prompt) => void
   onDelete: (id: string) => void
   onCopy: (prompt: Prompt) => void
+  onToggleFavorite: (prompt: Prompt) => void
 }
 
-export function PromptsScreen({ prompts, categories, onEdit, onDelete, onCopy }: PromptsScreenProps) {
+export function PromptsScreen({ prompts, categories, onEdit, onDelete, onCopy, onToggleFavorite }: PromptsScreenProps) {
   if (prompts.length === 0) {
     return (
       <p style={{ textAlign: 'center', color: T.ink3, padding: '40px 0', fontSize: 12, fontFamily: T.font }}>
@@ -33,6 +34,7 @@ export function PromptsScreen({ prompts, categories, onEdit, onDelete, onCopy }:
           onEdit={() => onEdit(prompt)}
           onDelete={() => onDelete(prompt.id)}
           onCopy={() => onCopy(prompt)}
+          onToggleFavorite={() => onToggleFavorite(prompt)}
         />
       ))}
     </div>
@@ -45,9 +47,10 @@ interface PromptCardProps {
   onEdit: () => void
   onDelete: () => void
   onCopy: () => void
+  onToggleFavorite: () => void
 }
 
-function PromptCard({ prompt, categories, onEdit, onDelete, onCopy }: PromptCardProps) {
+function PromptCard({ prompt, categories, onEdit, onDelete, onCopy, onToggleFavorite }: PromptCardProps) {
   const [hovered, setHovered] = useState(false)
   const [copied, setCopied] = useState(false)
 
@@ -82,8 +85,15 @@ function PromptCard({ prompt, categories, onEdit, onDelete, onCopy }: PromptCard
 
         {/* Content */}
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 12.5, fontWeight: 600, color: T.ink, letterSpacing: -0.1, marginBottom: 4, fontFamily: T.font }}>
-            {prompt.title}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+            <span style={{ fontSize: 12.5, fontWeight: 600, color: T.ink, letterSpacing: -0.1, fontFamily: T.font }}>
+              {prompt.title}
+            </span>
+            {prompt.favorite && (
+              <span style={{ color: 'oklch(0.85 0.13 80)', display: 'flex' }}>
+                <Icon d={IconPaths.star} size={9} fill="currentColor" />
+              </span>
+            )}
           </div>
           <div style={{
             fontSize: 10, fontFamily: T.mono, color: T.ink3, lineHeight: 1.4,
@@ -122,11 +132,18 @@ function PromptCard({ prompt, categories, onEdit, onDelete, onCopy }: PromptCard
           >
             <Icon d={copied ? IconPaths.check : IconPaths.copy} size={12} />
           </button>
-          {/* Hover-reveal edit/delete */}
+          {/* Hover-reveal edit/favorite/delete */}
           {hovered && (
             <>
               <button title="Edit" onClick={onEdit} style={actionBtnStyle}>
                 <Icon d={IconPaths.pencil} size={11} />
+              </button>
+              <button
+                title={prompt.favorite ? 'Remove from favorites' : 'Add to favorites'}
+                onClick={onToggleFavorite}
+                style={{ ...actionBtnStyle, color: prompt.favorite ? 'oklch(0.7 0.13 80)' : T.ink3 }}
+              >
+                <Icon d={IconPaths.star} size={11} fill={prompt.favorite ? 'currentColor' : 'none'} />
               </button>
               <button
                 title="Delete"

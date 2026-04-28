@@ -22,6 +22,7 @@ export interface Prompt {
   llm: string           // e.g. 'Claude', 'ChatGPT'
   tags: string[]        // array of Category ids
   uses: number          // copy-to-clipboard count
+  favorite?: boolean
   createdAt: string
   updatedAt: string
 }
@@ -50,4 +51,4 @@ export interface UIState {
 
 // ─── Misc ──────────────────────────────────────────────────────────────────────
 
-export type Tab = 'tools' | 'prompts' | 'categories'
+export type Tab = 'categories' | 'tools' | 'prompts' | 'favorites'
