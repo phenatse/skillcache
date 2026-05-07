@@ -1,11 +1,13 @@
-import type { Tool, Prompt, Category } from '@t/index'
+import type { Tool, Prompt, Note, Category } from '@t/index'
 import { T } from '../tokens'
 import { ToolsScreen } from './ToolsScreen'
 import { PromptsScreen } from './PromptsScreen'
+import { NotesScreen } from './NotesScreen'
 
 interface FavoritesScreenProps {
   tools: Tool[]
   prompts: Prompt[]
+  notes: Note[]
   categories: Category[]
   onEditTool: (tool: Tool) => void
   onDeleteTool: (id: string) => void
@@ -14,20 +16,25 @@ interface FavoritesScreenProps {
   onDeletePrompt: (id: string) => void
   onCopyPrompt: (prompt: Prompt) => void
   onTogglePromptFavorite: (prompt: Prompt) => void
+  onEditNote: (note: Note) => void
+  onDeleteNote: (id: string) => void
+  onToggleNoteFavorite: (note: Note) => void
 }
 
 export function FavoritesScreen({
-  tools, prompts, categories,
+  tools, prompts, notes, categories,
   onEditTool, onDeleteTool, onToggleToolFavorite,
   onEditPrompt, onDeletePrompt, onCopyPrompt, onTogglePromptFavorite,
+  onEditNote, onDeleteNote, onToggleNoteFavorite,
 }: FavoritesScreenProps) {
   const favTools   = tools.filter(t => t.favorite)
   const favPrompts = prompts.filter(p => p.favorite)
+  const favNotes   = notes.filter(n => n.favorite)
 
-  if (favTools.length === 0 && favPrompts.length === 0) {
+  if (favTools.length === 0 && favPrompts.length === 0 && favNotes.length === 0) {
     return (
       <p style={{ textAlign: 'center', color: T.ink3, padding: '40px 0', fontSize: 12, fontFamily: T.font }}>
-        No favorites yet — star a tool or prompt to see it here.
+        No favorites yet — star a tool, prompt, or note to see it here.
       </p>
     )
   }
@@ -56,6 +63,18 @@ export function FavoritesScreen({
             onDelete={onDeletePrompt}
             onCopy={onCopyPrompt}
             onToggleFavorite={onTogglePromptFavorite}
+          />
+        </section>
+      )}
+      {favNotes.length > 0 && (
+        <section>
+          <SectionLabel>Notes</SectionLabel>
+          <NotesScreen
+            notes={favNotes}
+            categories={categories}
+            onEdit={onEditNote}
+            onDelete={onDeleteNote}
+            onToggleFavorite={onToggleNoteFavorite}
           />
         </section>
       )}

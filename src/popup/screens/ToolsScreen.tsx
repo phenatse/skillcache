@@ -12,19 +12,29 @@ interface ToolsScreenProps {
   onEdit: (tool: Tool) => void
   onDelete: (id: string) => void
   onToggleFavorite: (tool: Tool) => void
+  recommendedCount?: number
+  onOpenDiscover?: () => void
 }
 
-export function ToolsScreen({ tools, categories, onEdit, onDelete, onToggleFavorite }: ToolsScreenProps) {
+export function ToolsScreen({ tools, categories, onEdit, onDelete, onToggleFavorite, recommendedCount = 0, onOpenDiscover }: ToolsScreenProps) {
   if (tools.length === 0) {
     return (
-      <p style={{ textAlign: 'center', color: T.ink3, padding: '40px 0', fontSize: 12, fontFamily: T.font }}>
-        No tools yet — add one with the + button.
-      </p>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '30px 0', gap: 12 }}>
+        <p style={{ textAlign: 'center', color: T.ink3, fontSize: 12, fontFamily: T.font, margin: 0 }}>
+          No tools yet — add one with the + button.
+        </p>
+        {recommendedCount > 0 && onOpenDiscover && (
+          <DiscoverPill count={recommendedCount} onClick={onOpenDiscover} />
+        )}
+      </div>
     )
   }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {recommendedCount > 0 && onOpenDiscover && (
+        <DiscoverPill count={recommendedCount} onClick={onOpenDiscover} />
+      )}
       {tools.map(tool => (
         <ToolCard
           key={tool.id}
@@ -191,6 +201,27 @@ function ToolCard({ tool, categories, onEdit, onDelete, onToggleFavorite }: Tool
         </div>
       </div>
     </GlassCard>
+  )
+}
+
+function DiscoverPill({ count, onClick }: { count: number; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 6,
+        padding: '7px 12px', borderRadius: 8, width: '100%',
+        background: 'rgba(91,108,255,0.07)',
+        border: '1px solid rgba(91,108,255,0.18)',
+        color: T.indigoDeep, cursor: 'pointer',
+        fontSize: 11, fontWeight: 500, fontFamily: T.font,
+        transition: 'background 120ms',
+      }}
+    >
+      <Icon d={IconPaths.spark} size={12} stroke={T.indigoDeep} />
+      Browse {count} recommended tool{count !== 1 ? 's' : ''}
+      <span style={{ marginLeft: 'auto', opacity: 0.5 }}>→</span>
+    </button>
   )
 }
 

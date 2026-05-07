@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import type { Tool, Prompt, Category, Tab, StorageUsage } from '@t/index'
+import type { Tool, Prompt, Note, Category, Tab, StorageUsage } from '@t/index'
 import { T } from './tokens'
 import { Aurora }       from './components/Aurora'
 import { Header }       from './components/Header'
@@ -8,11 +8,16 @@ import { FilterChips }  from './components/FilterChips'
 import { TabBar }       from './components/TabBar'
 import { ToolsScreen }      from './screens/ToolsScreen'
 import { PromptsScreen }    from './screens/PromptsScreen'
+import { NotesScreen }      from './screens/NotesScreen'
 import { CategoriesScreen } from './screens/CategoriesScreen'
 import { FavoritesScreen }  from './screens/FavoritesScreen'
 import { AddSheet }         from './screens/AddSheet'
+import { DiscoverSheet }    from './screens/DiscoverSheet'
 import { searchTools, searchPrompts } from '@lib/search'
+import { RECOMMENDED_TOOLS, normaliseUrl } from '@lib/recommendations'
 import * as api from '@lib/api'
+
+type ItemType = 'tool' | 'prompt' | 'note'
 
 export default function App() {
   // ── UI state ────────────────────────────────────────────────
@@ -20,12 +25,14 @@ export default function App() {
   const [searchQuery,  setSearchQuery]  = useState('')
   const [activeFilter, setActiveFilter] = useState<string | null>(null)
   const [sheetOpen,    setSheetOpen]    = useState(false)
-  const [sheetType,    setSheetType]    = useState<'tool' | 'prompt'>('tool')
-  const [editItem,     setEditItem]     = useState<Tool | Prompt | null>(null)
+  const [sheetType,    setSheetType]    = useState<ItemType>('tool')
+  const [editItem,     setEditItem]     = useState<Tool | Prompt | Note | null>(null)
+  const [discoverOpen, setDiscoverOpen] = useState(false)
 
   // ── Data state ───────────────────────────────────────────────
   const [tools,      setTools]      = useState<Tool[]>([])
   const [prompts,    setPrompts]    = useState<Prompt[]>([])
+  const [notes,      setNotes]      = useState<Note[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [lastSaved,    setLastSaved]    = useState<Date | null>(null)
   const [storageUsage, setStorageUsage] = useState<StorageUsage | null>(null)
@@ -40,11 +47,12 @@ export default function App() {
       if (!mounted) return
       setTools(data.tools)
       setPrompts(data.prompts)
+      setNotes(data.notes)
       setCategories(data.categories)
-      if (ui.activeTab)    setTab(ui.activeTab)
-      if (ui.searchQuery)  setSearchQuery(ui.searchQuery)
-      if (ui.lastSaved)    setLastSaved(new Date(ui.lastSaved))
       setStorageUsage(usage)
+      if (ui.activeTab)   setTab(ui.activeTab)
+      if (ui.searchQuery) setSearchQuery(ui.searchQuery)
+      if (ui.lastSaved)   setLastSaved(new Date(ui.lastSaved))
       setLoading(false)
     }
     load()
@@ -61,6 +69,7 @@ export default function App() {
     const [data, usage] = await Promise.all([api.getAll(), api.getStorageUsage()])
     setTools(data.tools)
     setPrompts(data.prompts)
+    setNotes(data.notes)
     setCategories(data.categories)
     setStorageUsage(usage)
     const ts = new Date()
@@ -87,6 +96,16 @@ export default function App() {
     return cat ? result.filter(p => p.tags.includes(cat.id)) : result
   }, [prompts, searchQuery, activeFilter, categories])
 
+  const filteredNotes = useMemo(() => {
+    if (!searchQuery) return notes
+    const q = searchQuery.toLowerCase()
+    return notes.filter(n =>
+      n.title.toLowerCase().includes(q) ||
+      n.body.toLowerCase().includes(q) ||
+      n.company.toLowerCase().includes(q)
+    )
+  }, [notes, searchQuery])
+
   // ── Filter chip options ───────────────────────────────────────
   const toolFilters   = useMemo(() => ['All', 'Favorites', 'Recent', ...categories.map(c => c.name)], [categories])
   const promptFilters = useMemo(() => {
@@ -94,7 +113,14 @@ export default function App() {
     return ['All', ...llms]
   }, [prompts])
 
-  // ── Tab switching (clears filter) ─────────────────────────────
+  // ── Discover: unAdded recommendations count ───────────────────
+  const addedUrls = useMemo(() => new Set(tools.map(t => normaliseUrl(t.url))), [tools])
+  const unaddedRecsCount = useMemo(
+    () => RECOMMENDED_TOOLS.filter(r => !addedUrls.has(normaliseUrl(r.url))).length,
+    [addedUrls]
+  )
+
+  // ── Tab switching ─────────────────────────────────────────────
   function handleTabSelect(t: Tab) {
     setTab(t)
     setActiveFilter(null)
@@ -102,14 +128,14 @@ export default function App() {
   }
 
   // ── AddSheet handlers ─────────────────────────────────────────
-  function openAdd(type: 'tool' | 'prompt' = sheetType) {
+  function openAdd(type: ItemType = sheetType) {
     setSheetType(type)
     setEditItem(null)
     setSheetOpen(true)
   }
 
-  function openEdit(item: Tool | Prompt) {
-    setSheetType(item.type)
+  function openEdit(item: Tool | Prompt | Note) {
+    setSheetType(item.type as ItemType)
     setEditItem(item)
     setSheetOpen(true)
   }
@@ -119,11 +145,13 @@ export default function App() {
     setEditItem(null)
   }
 
-  async function handleSave(data: Partial<Tool> | Partial<Prompt>) {
+  async function handleSave(data: Partial<Tool> | Partial<Prompt> | Partial<Note>) {
     if (sheetType === 'tool') {
       await api.tools.save(data as Partial<Tool> & { name: string })
-    } else {
+    } else if (sheetType === 'prompt') {
       await api.prompts.save(data as Partial<Prompt> & { title: string; text: string })
+    } else {
+      await api.notes.save(data as Partial<Note> & { title: string; body: string })
     }
     await refresh()
   }
@@ -139,11 +167,6 @@ export default function App() {
     await refresh()
   }
 
-  async function handleTogglePromptFavorite(prompt: Prompt) {
-    await api.prompts.save({ ...prompt, favorite: !prompt.favorite })
-    await refresh()
-  }
-
   // ── Prompt actions ────────────────────────────────────────────
   async function handleDeletePrompt(id: string) {
     await api.prompts.remove(id)
@@ -153,6 +176,22 @@ export default function App() {
   async function handleCopyPrompt(prompt: Prompt) {
     await navigator.clipboard.writeText(prompt.text)
     await api.prompts.incrementUses(prompt.id)
+    await refresh()
+  }
+
+  async function handleTogglePromptFavorite(prompt: Prompt) {
+    await api.prompts.save({ ...prompt, favorite: !prompt.favorite })
+    await refresh()
+  }
+
+  // ── Note actions ──────────────────────────────────────────────
+  async function handleDeleteNote(id: string) {
+    await api.notes.remove(id)
+    await refresh()
+  }
+
+  async function handleToggleNoteFavorite(note: Note) {
+    await api.notes.save({ ...note, favorite: !note.favorite })
     await refresh()
   }
 
@@ -167,9 +206,13 @@ export default function App() {
     await refresh()
   }
 
-  function handleFilterByCategory(catName: string) {
-    setTab('tools')
-    setActiveFilter(catName)
+  // ── Discover: add recommendation ─────────────────────────────
+  async function handleAddRecommendation(rec: { name: string; url: string; description: string; tags: string[] }) {
+    await api.tools.save({
+      name: rec.name, url: rec.url, description: rec.description,
+      notes: '', usedAt: '', tags: rec.tags,
+    })
+    await refresh()
   }
 
   // ── Render ────────────────────────────────────────────────────
@@ -185,10 +228,13 @@ export default function App() {
     )
   }
 
+  const defaultAddType: ItemType = tab === 'prompts' ? 'prompt' : tab === 'notes' ? 'note' : 'tool'
+
   const searchPlaceholders: Record<Tab, string> = {
     categories: 'Filter categories…',
-    tools:      'Search tools, prompts, tags…',
+    tools:      'Search tools…',
     prompts:    'Search prompts by title or model…',
+    notes:      'Search notes…',
     favorites:  'Search favorites…',
   }
 
@@ -207,8 +253,8 @@ export default function App() {
       <Aurora />
 
       <Header
-        totalCount={tools.length + prompts.length}
-        onAdd={() => openAdd(tab === 'prompts' ? 'prompt' : 'tool')}
+        totalCount={tools.length + prompts.length + notes.length}
+        onAdd={() => openAdd(defaultAddType)}
         lastSaved={lastSaved}
         storageUsage={storageUsage}
       />
@@ -219,20 +265,11 @@ export default function App() {
         placeholder={searchPlaceholders[tab]}
       />
 
-      {/* Filter chips — only on tools and prompts tabs */}
       {tab === 'tools' && (
-        <FilterChips
-          filters={toolFilters}
-          active={activeFilter}
-          onSelect={setActiveFilter}
-        />
+        <FilterChips filters={toolFilters} active={activeFilter} onSelect={setActiveFilter} />
       )}
       {tab === 'prompts' && (
-        <FilterChips
-          filters={promptFilters}
-          active={activeFilter}
-          onSelect={setActiveFilter}
-        />
+        <FilterChips filters={promptFilters} active={activeFilter} onSelect={setActiveFilter} />
       )}
 
       <TabBar active={tab} onSelect={handleTabSelect} />
@@ -246,6 +283,8 @@ export default function App() {
             onEdit={openEdit}
             onDelete={handleDeleteTool}
             onToggleFavorite={handleToggleFavorite}
+            recommendedCount={unaddedRecsCount}
+            onOpenDiscover={() => setDiscoverOpen(true)}
           />
         )}
         {tab === 'prompts' && (
@@ -258,12 +297,21 @@ export default function App() {
             onToggleFavorite={handleTogglePromptFavorite}
           />
         )}
+        {tab === 'notes' && (
+          <NotesScreen
+            notes={filteredNotes}
+            categories={categories}
+            onEdit={openEdit}
+            onDelete={handleDeleteNote}
+            onToggleFavorite={handleToggleNoteFavorite}
+          />
+        )}
         {tab === 'categories' && (
           <CategoriesScreen
             categories={categories}
             tools={tools}
             prompts={prompts}
-            onFilter={handleFilterByCategory}
+            notes={notes}
             onDelete={handleDeleteCategory}
             onSave={handleSaveCategory}
           />
@@ -272,6 +320,7 @@ export default function App() {
           <FavoritesScreen
             tools={tools}
             prompts={prompts}
+            notes={notes}
             categories={categories}
             onEditTool={openEdit}
             onDeleteTool={handleDeleteTool}
@@ -280,6 +329,9 @@ export default function App() {
             onDeletePrompt={handleDeletePrompt}
             onCopyPrompt={handleCopyPrompt}
             onTogglePromptFavorite={handleTogglePromptFavorite}
+            onEditNote={openEdit}
+            onDeleteNote={handleDeleteNote}
+            onToggleNoteFavorite={handleToggleNoteFavorite}
           />
         )}
       </div>
@@ -292,6 +344,13 @@ export default function App() {
         categories={categories}
         onSave={handleSave}
         onClose={closeSheet}
+      />
+
+      <DiscoverSheet
+        open={discoverOpen}
+        tools={tools}
+        onAdd={handleAddRecommendation}
+        onClose={() => setDiscoverOpen(false)}
       />
     </div>
   )

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import type { CSSProperties, FormEvent, ReactNode } from 'react'
-import type { Tool, Prompt, Category } from '@t/index'
+import type { Tool, Prompt, Note, Category } from '@t/index'
 import { T, getLlmHue } from '../tokens'
 import { Icon, IconPaths } from '../icons'
 import { TagPill } from '../components/TagPill'
@@ -8,13 +8,15 @@ import { IconBtn } from '../components/IconBtn'
 
 const LLM_OPTIONS = ['Claude', 'ChatGPT', 'Gemini', 'Copilot', 'Perplexity', 'Other']
 
+type ItemType = 'tool' | 'prompt' | 'note'
+
 interface AddSheetProps {
   open: boolean
-  type: 'tool' | 'prompt'
-  onTypeChange: (t: 'tool' | 'prompt') => void
-  editItem: Tool | Prompt | null
+  type: ItemType
+  onTypeChange: (t: ItemType) => void
+  editItem: Tool | Prompt | Note | null
   categories: Category[]
-  onSave: (data: Partial<Tool> | Partial<Prompt>) => Promise<void>
+  onSave: (data: Partial<Tool> | Partial<Prompt> | Partial<Note>) => Promise<void>
   onClose: () => void
 }
 
@@ -22,35 +24,39 @@ export function AddSheet({ open, type, onTypeChange, editItem, categories, onSav
   const isEdit = editItem !== null
 
   // ── Tool form state ───────────────────────────────────────────
-  const [toolName, setToolName]   = useState('')
-  const [toolUrl, setToolUrl]     = useState('')
-  const [toolDesc, setToolDesc]   = useState('')
+  const [toolName,   setToolName]   = useState('')
+  const [toolUrl,    setToolUrl]    = useState('')
+  const [toolDesc,   setToolDesc]   = useState('')
   const [toolUsedAt, setToolUsedAt] = useState('')
-  const [toolNotes, setToolNotes] = useState('')
+  const [toolNotes,  setToolNotes]  = useState('')
 
   // ── Prompt form state ─────────────────────────────────────────
   const [promptTitle, setPromptTitle] = useState('')
-  const [promptLlm, setPromptLlm]     = useState('')
-  const [promptText, setPromptText]   = useState('')
+  const [promptLlm,   setPromptLlm]   = useState('')
+  const [promptText,  setPromptText]  = useState('')
+
+  // ── Note form state ───────────────────────────────────────────
+  const [noteTitle,   setNoteTitle]   = useState('')
+  const [noteBody,    setNoteBody]    = useState('')
+  const [noteCompany, setNoteCompany] = useState('')
 
   // ── Shared ────────────────────────────────────────────────────
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [saving, setSaving] = useState(false)
-  const [error, setError]   = useState('')
+  const [error,  setError]  = useState('')
 
-  // Pre-fill when editing
   useEffect(() => {
-    if (!editItem) {
-      resetForm()
-      return
-    }
+    if (!editItem) { resetForm(); return }
     if (editItem.type === 'tool') {
       const t = editItem as Tool
       setToolName(t.name); setToolUrl(t.url); setToolDesc(t.description)
       setToolUsedAt(t.usedAt); setToolNotes(t.notes)
-    } else {
+    } else if (editItem.type === 'prompt') {
       const p = editItem as Prompt
       setPromptTitle(p.title); setPromptLlm(p.llm); setPromptText(p.text)
+    } else {
+      const n = editItem as Note
+      setNoteTitle(n.title); setNoteBody(n.body); setNoteCompany(n.company)
     }
     setSelectedTags(editItem.tags ?? [])
     setError('')
@@ -59,6 +65,7 @@ export function AddSheet({ open, type, onTypeChange, editItem, categories, onSav
   function resetForm() {
     setToolName(''); setToolUrl(''); setToolDesc(''); setToolUsedAt(''); setToolNotes('')
     setPromptTitle(''); setPromptLlm(''); setPromptText('')
+    setNoteTitle(''); setNoteBody(''); setNoteCompany('')
     setSelectedTags([]); setError('')
   }
 
@@ -79,7 +86,7 @@ export function AddSheet({ open, type, onTypeChange, editItem, categories, onSav
         description: toolDesc.trim(), usedAt: toolUsedAt.trim(),
         notes: toolNotes.trim(), tags: selectedTags,
       } as Partial<Tool>)
-    } else {
+    } else if (type === 'prompt') {
       if (!promptTitle.trim()) { setError('Title is required.'); return }
       if (!promptText.trim())  { setError('Prompt text is required.'); return }
       setSaving(true)
@@ -88,11 +95,26 @@ export function AddSheet({ open, type, onTypeChange, editItem, categories, onSav
         title: promptTitle.trim(), llm: promptLlm,
         text: promptText.trim(), tags: selectedTags,
       } as Partial<Prompt>)
+    } else {
+      if (!noteTitle.trim()) { setError('Title is required.'); return }
+      if (!noteBody.trim())  { setError('Content is required.'); return }
+      setSaving(true)
+      await onSave({
+        ...(isEdit ? { id: editItem!.id } : {}),
+        title: noteTitle.trim(), body: noteBody.trim(),
+        company: noteCompany.trim(), tags: selectedTags,
+      } as Partial<Note>)
     }
 
     setSaving(false)
     onClose()
   }
+
+  const TYPE_TABS: { id: ItemType; label: string; icon: keyof typeof IconPaths }[] = [
+    { id: 'tool',   label: 'Tool',   icon: 'tools'  },
+    { id: 'prompt', label: 'Prompt', icon: 'prompt' },
+    { id: 'note',   label: 'Note',   icon: 'note'   },
+  ]
 
   return (
     <>
@@ -139,7 +161,7 @@ export function AddSheet({ open, type, onTypeChange, editItem, categories, onSav
               {isEdit ? 'Edit Entry' : 'Add to Cache'}
             </div>
             <div style={{ fontSize: 10, color: T.ink3, marginTop: 2, fontFamily: T.font }}>
-              Save a tool, snippet, or prompt
+              Save a tool, prompt, or note
             </div>
           </div>
           <IconBtn onClick={onClose} title="Close">
@@ -147,20 +169,20 @@ export function AddSheet({ open, type, onTypeChange, editItem, categories, onSav
           </IconBtn>
         </div>
 
-        {/* Tool / Prompt toggle */}
+        {/* Type toggle */}
         {!isEdit && (
           <div style={{ padding: '0 16px 10px', flexShrink: 0 }}>
             <div style={{
-              display: 'grid', gridTemplateColumns: '1fr 1fr',
+              display: 'grid', gridTemplateColumns: '1fr 1fr 1fr',
               background: 'rgba(50,60,110,0.05)',
               border: `1px solid ${T.line}`, borderRadius: 8, padding: 3,
             }}>
-              {(['tool', 'prompt'] as const).map(t => {
-                const on = type === t
+              {TYPE_TABS.map(t => {
+                const on = type === t.id
                 return (
                   <button
-                    key={t}
-                    onClick={() => onTypeChange(t)}
+                    key={t.id}
+                    onClick={() => onTypeChange(t.id)}
                     style={{
                       padding: '7px 0', textAlign: 'center',
                       fontSize: 11, fontWeight: on ? 500 : 400,
@@ -172,9 +194,8 @@ export function AddSheet({ open, type, onTypeChange, editItem, categories, onSav
                       fontFamily: T.font,
                     }}
                   >
-                    <Icon d={t === 'tool' ? IconPaths.tools : IconPaths.prompt} size={11}
-                          stroke={on ? T.indigoDeep : T.ink2} />
-                    {t === 'tool' ? 'Tool' : 'Prompt'}
+                    <Icon d={IconPaths[t.icon]} size={11} stroke={on ? T.indigoDeep : T.ink2} />
+                    {t.label}
                   </button>
                 )
               })}
@@ -187,7 +208,7 @@ export function AddSheet({ open, type, onTypeChange, editItem, categories, onSav
           onSubmit={handleSubmit}
           style={{ flex: 1, overflowY: 'auto', padding: '0 16px', display: 'flex', flexDirection: 'column', gap: 10 }}
         >
-          {type === 'tool' ? (
+          {type === 'tool' && (
             <>
               <Field label="Name" required>
                 <input value={toolName} onChange={e => setToolName(e.target.value)}
@@ -230,7 +251,9 @@ export function AddSheet({ open, type, onTypeChange, editItem, categories, onSav
                   placeholder="Tips, shortcuts, quirks…" rows={2} style={{ ...inputStyle, resize: 'none' }} />
               </Field>
             </>
-          ) : (
+          )}
+
+          {type === 'prompt' && (
             <>
               <Field label="Title" required>
                 <input value={promptTitle} onChange={e => setPromptTitle(e.target.value)}
@@ -266,8 +289,41 @@ export function AddSheet({ open, type, onTypeChange, editItem, categories, onSav
             </>
           )}
 
-          {/* Tag chips (additional categories) */}
-          {categories.length > 0 && (
+          {type === 'note' && (
+            <>
+              <Field label="Title" required>
+                <input value={noteTitle} onChange={e => setNoteTitle(e.target.value)}
+                  placeholder="e.g. Brand voice guidelines" style={inputStyle} />
+              </Field>
+              <Field label="Content" required>
+                <textarea value={noteBody} onChange={e => setNoteBody(e.target.value)}
+                  placeholder="Strategies, directions, context…" rows={6}
+                  style={{ ...inputStyle, resize: 'vertical', minHeight: 100 }} />
+              </Field>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <Field label="Company / Reference">
+                  <input value={noteCompany} onChange={e => setNoteCompany(e.target.value)}
+                    placeholder="e.g. Acme Corp" style={inputStyle} />
+                </Field>
+                <Field label="Category">
+                  <select
+                    value={selectedTags[0] ?? ''}
+                    onChange={e => {
+                      const v = e.target.value
+                      setSelectedTags(v ? [v] : [])
+                    }}
+                    style={{ ...inputStyle, appearance: 'auto' }}
+                  >
+                    <option value="">— none —</option>
+                    {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                </Field>
+              </div>
+            </>
+          )}
+
+          {/* Additional tag chips */}
+          {categories.length > 0 && type !== 'note' && (
             <div>
               <span style={{ fontSize: 10, fontFamily: T.mono, color: T.ink3, letterSpacing: 0.4, textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>
                 Tags
@@ -278,9 +334,7 @@ export function AddSheet({ open, type, onTypeChange, editItem, categories, onSav
                   return (
                     <button key={c.id} type="button" onClick={() => toggleTag(c.id)}
                       style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
-                      <TagPill hue={on ? undefined : undefined} dim={!on} mono>
-                        {c.name}
-                      </TagPill>
+                      <TagPill dim={!on} mono>{c.name}</TagPill>
                     </button>
                   )
                 })}
@@ -288,12 +342,10 @@ export function AddSheet({ open, type, onTypeChange, editItem, categories, onSav
             </div>
           )}
 
-          {/* Error */}
           {error && (
             <p style={{ fontSize: 11, color: 'oklch(0.6 0.18 10)', fontFamily: T.font }}>{error}</p>
           )}
 
-          {/* Footer */}
           <div style={{
             display: 'flex', gap: 8, padding: '10px 0 12px',
             borderTop: `1px solid ${T.line}`, marginTop: 'auto',
@@ -332,13 +384,8 @@ export function AddSheet({ open, type, onTypeChange, editItem, categories, onSav
   )
 }
 
-// ── Form helpers ──────────────────────────────────────────────────────────────
-
 function Field({ label, children, required, hint }: {
-  label: string
-  children: ReactNode
-  required?: boolean
-  hint?: string
+  label: string; children: ReactNode; required?: boolean; hint?: string
 }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>

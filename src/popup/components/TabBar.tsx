@@ -11,6 +11,7 @@ const TABS: { id: Tab; label: string; icon: keyof typeof IconPaths }[] = [
   { id: 'categories', label: 'Categories', icon: 'cat'    },
   { id: 'tools',      label: 'Tools',      icon: 'tools'  },
   { id: 'prompts',    label: 'Prompts',    icon: 'prompt' },
+  { id: 'notes',      label: 'Notes',      icon: 'note'   },
   { id: 'favorites',  label: 'Favorites',  icon: 'star'   },
 ]
 

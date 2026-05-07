@@ -5,11 +5,12 @@
  * To swap to a REST API later, replace the implementations here without touching any screen.
  */
 
-import type { Tool, Prompt, Category } from '@t/index'
+import type { Tool, Prompt, Category, Note } from '@t/index'
 import {
   getAll, initDefaults, getUIState, saveUIState, getStorageUsage,
   saveTool as _saveTool, deleteTool as _deleteTool,
   savePrompt as _savePrompt, deletePrompt as _deletePrompt, incrementPromptUses as _incUses,
+  saveNote as _saveNote, deleteNote as _deleteNote,
   saveCategory as _saveCategory, deleteCategory as _deleteCategory,
 } from './storage'
 
@@ -31,6 +32,12 @@ export const prompts = {
   remove: (id: string) => _deletePrompt(id),
   /** Increment the usage counter when a prompt is copied */
   incrementUses: (id: string) => _incUses(id),
+}
+
+export const notes = {
+  list: (): Promise<Note[]> => getAll().then(d => d.notes),
+  save: (data: Partial<Note> & { title: string; body: string }) => _saveNote(data),
+  remove: (id: string) => _deleteNote(id),
 }
 
 export const categories = {

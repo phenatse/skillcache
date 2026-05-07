@@ -14,11 +14,12 @@
  * has the old single-key format, we copy it over and clear local.
  */
 
-import type { Tool, Prompt, Category, StorageData, UIState } from '@t/index'
+import type { Tool, Prompt, Category, Note, StorageData, UIState } from '@t/index'
 
 const T_PREFIX = 'sc_t_'
 const P_PREFIX = 'sc_p_'
 const C_PREFIX = 'sc_c_'
+const N_PREFIX = 'sc_n_'
 const UI_KEY   = 'sc_ui'
 
 // Legacy keys from the old chrome.storage.local format
@@ -34,55 +35,12 @@ const DEFAULT_CATEGORIES: Omit<Category, 'createdAt'>[] = [
   { id: 'cat-ai',        name: 'AI'        },
 ]
 
-type SeedTool = Omit<Tool, 'id' | 'type' | 'favorite' | 'createdAt' | 'updatedAt'>
-
-const DEFAULT_TOOLS: SeedTool[] = [
-  // Dev
-  { name: 'GitHub',      url: 'https://github.com',        description: 'Code hosting, PRs, CI/CD',                  notes: '', usedAt: '', tags: ['cat-dev'] },
-  { name: 'Vercel',      url: 'https://vercel.com',        description: 'Deploy frontends in seconds',                notes: '', usedAt: '', tags: ['cat-dev'] },
-  { name: 'Postman',     url: 'https://postman.com',       description: 'API testing and collections',                notes: '', usedAt: '', tags: ['cat-dev'] },
-  { name: 'Railway',     url: 'https://railway.app',       description: 'Backend + DB hosting',                      notes: '', usedAt: '', tags: ['cat-dev'] },
-  { name: 'Supabase',    url: 'https://supabase.com',      description: 'Postgres + auth + storage as a service',     notes: '', usedAt: '', tags: ['cat-dev'] },
-  { name: 'CodeSandbox', url: 'https://codesandbox.io',    description: 'Browser-based dev environments',             notes: '', usedAt: '', tags: ['cat-dev'] },
-  { name: 'Warp',        url: 'https://warp.dev',          description: 'AI-native terminal',                         notes: '', usedAt: '', tags: ['cat-dev'] },
-  { name: 'Cursor',      url: 'https://cursor.com',        description: 'AI code editor',                             notes: '', usedAt: '', tags: ['cat-dev'] },
-  // Marketing
-  { name: 'Canva',       url: 'https://canva.com',         description: 'Drag-and-drop design tool',                  notes: '', usedAt: '', tags: ['cat-marketing'] },
-  { name: 'Beehiiv',     url: 'https://beehiiv.com',       description: 'Newsletter platform',                        notes: '', usedAt: '', tags: ['cat-marketing'] },
-  { name: 'Buffer',      url: 'https://buffer.com',        description: 'Social media scheduling',                    notes: '', usedAt: '', tags: ['cat-marketing'] },
-  { name: 'Mailchimp',   url: 'https://mailchimp.com',     description: 'Email marketing & automation',               notes: '', usedAt: '', tags: ['cat-marketing'] },
-  { name: 'Typefully',   url: 'https://typefully.com',     description: 'Twitter/X thread composer',                  notes: '', usedAt: '', tags: ['cat-marketing'] },
-  { name: 'Loom',        url: 'https://loom.com',          description: 'Async video messaging',                      notes: '', usedAt: '', tags: ['cat-marketing'] },
-  // Community
-  { name: 'Discord',     url: 'https://discord.com',       description: 'Community chat and servers',                 notes: '', usedAt: '', tags: ['cat-community'] },
-  { name: 'Slack',       url: 'https://slack.com',         description: 'Team messaging',                             notes: '', usedAt: '', tags: ['cat-community'] },
-  { name: 'Circle',      url: 'https://circle.so',         description: 'Community platform for creators',            notes: '', usedAt: '', tags: ['cat-community'] },
-  { name: 'Notion',      url: 'https://notion.so',         description: 'Docs, wikis, and project boards',            notes: '', usedAt: '', tags: ['cat-community'] },
-  { name: 'Luma',        url: 'https://lu.ma',             description: 'Event hosting + RSVP',                       notes: '', usedAt: '', tags: ['cat-community', 'cat-events'] },
-  // Events
-  { name: 'Eventbrite',  url: 'https://eventbrite.com',    description: 'Large-scale event management',               notes: '', usedAt: '', tags: ['cat-events'] },
-  { name: 'Zoom',        url: 'https://zoom.us',           description: 'Video conferencing',                         notes: '', usedAt: '', tags: ['cat-events'] },
-  { name: 'Streamyard',  url: 'https://streamyard.com',    description: 'Live streaming studio',                      notes: '', usedAt: '', tags: ['cat-events'] },
-  { name: 'Cal.com',     url: 'https://cal.com',           description: 'Open-source scheduling',                     notes: '', usedAt: '', tags: ['cat-events'] },
-  // UAT
-  { name: 'Maze',        url: 'https://maze.co',           description: 'Rapid usability testing',                    notes: '', usedAt: '', tags: ['cat-uat'] },
-  { name: 'UserTesting', url: 'https://usertesting.com',   description: 'Video feedback from real users',              notes: '', usedAt: '', tags: ['cat-uat'] },
-  { name: 'Hotjar',      url: 'https://hotjar.com',        description: 'Heatmaps and session recordings',             notes: '', usedAt: '', tags: ['cat-uat'] },
-  { name: 'Lyssna',      url: 'https://lyssna.com',        description: 'Design and copy testing',                    notes: '', usedAt: '', tags: ['cat-uat'] },
-  { name: 'ScreenRec',   url: 'https://screenrec.com',     description: 'Quick screen recording',                     notes: '', usedAt: '', tags: ['cat-uat'] },
-  // AI
-  { name: 'Claude',      url: 'https://claude.ai',         description: "Anthropic's AI assistant",                   notes: '', usedAt: '', tags: ['cat-ai'] },
-  { name: 'ChatGPT',     url: 'https://chatgpt.com',       description: "OpenAI's AI assistant",                      notes: '', usedAt: '', tags: ['cat-ai'] },
-  { name: 'Perplexity',  url: 'https://perplexity.ai',     description: 'AI-powered search',                          notes: '', usedAt: '', tags: ['cat-ai'] },
-  { name: 'v0',          url: 'https://v0.dev',            description: 'AI UI generator by Vercel',                  notes: '', usedAt: '', tags: ['cat-ai', 'cat-dev'] },
-  { name: 'Runway',      url: 'https://runwayml.com',      description: 'AI video generation',                        notes: '', usedAt: '', tags: ['cat-ai'] },
-]
-
 // ─── Key helpers ──────────────────────────────────────────────────────────────
 
 function toolKey(id: string)   { return `${T_PREFIX}${id}` }
 function promptKey(id: string) { return `${P_PREFIX}${id}` }
 function catKey(id: string)    { return `${C_PREFIX}${id}` }
+function noteKey(id: string)   { return `${N_PREFIX}${id}` }
 
 // ─── Utilities ────────────────────────────────────────────────────────────────
 
@@ -100,8 +58,9 @@ export async function getAll(): Promise<StorageData> {
   const all = await chrome.storage.sync.get(null)
   const tools      = Object.entries(all).filter(([k]) => k.startsWith(T_PREFIX)).map(([, v]) => v as Tool)
   const prompts    = Object.entries(all).filter(([k]) => k.startsWith(P_PREFIX)).map(([, v]) => v as Prompt)
+  const notes      = Object.entries(all).filter(([k]) => k.startsWith(N_PREFIX)).map(([, v]) => v as Note)
   const categories = Object.entries(all).filter(([k]) => k.startsWith(C_PREFIX)).map(([, v]) => v as Category)
-  return { tools, prompts, categories }
+  return { tools, prompts, notes, categories }
 }
 
 // Writes (or overwrites) every entity in data. Also removes sync keys for
@@ -112,6 +71,7 @@ async function saveAll(data: StorageData): Promise<void> {
   const toRemove: string[] = Object.keys(all).filter(k => {
     if (k.startsWith(T_PREFIX)) return !data.tools.find(t => toolKey(t.id) === k)
     if (k.startsWith(P_PREFIX)) return !data.prompts.find(p => promptKey(p.id) === k)
+    if (k.startsWith(N_PREFIX)) return !data.notes.find(n => noteKey(n.id) === k)
     if (k.startsWith(C_PREFIX)) return !data.categories.find(c => catKey(c.id) === k)
     return false
   })
@@ -119,6 +79,7 @@ async function saveAll(data: StorageData): Promise<void> {
   const toSet: Record<string, unknown> = {}
   data.tools.forEach(t      => { toSet[toolKey(t.id)]   = t })
   data.prompts.forEach(p    => { toSet[promptKey(p.id)] = p })
+  data.notes.forEach(n      => { toSet[noteKey(n.id)]   = n })
   data.categories.forEach(c => { toSet[catKey(c.id)]    = c })
 
   if (toRemove.length)            await chrome.storage.sync.remove(toRemove)
@@ -146,18 +107,12 @@ export async function initDefaults(): Promise<void> {
     return
   }
 
-  // Fresh install — seed defaults
+  // Fresh install — seed categories only; tools come from the Discover sheet
   const seeded: StorageData = {
     categories: DEFAULT_CATEGORIES.map(c => ({ ...c, createdAt: now() })),
-    tools: DEFAULT_TOOLS.map(t => ({
-      ...t,
-      id:        generateId(),
-      type:      'tool' as const,
-      favorite:  false,
-      createdAt: now(),
-      updatedAt: now(),
-    })),
+    tools:   [],
     prompts: [],
+    notes:   [],
   }
   await saveAll(seeded)
 }
@@ -240,6 +195,40 @@ export async function incrementPromptUses(id: string): Promise<void> {
   }
 }
 
+// ─── Notes ────────────────────────────────────────────────────────────────────
+
+export async function saveNote(
+  noteData: Partial<Note> & { title: string; body: string },
+): Promise<Note[]> {
+  let note: Note
+
+  if (noteData.id) {
+    const existing = await chrome.storage.sync.get(noteKey(noteData.id))
+    const current  = (existing[noteKey(noteData.id)] ?? {}) as Partial<Note>
+    note = { ...current, ...noteData, updatedAt: now() } as Note
+  } else {
+    note = {
+      id:        generateId(),
+      type:      'note',
+      title:     noteData.title,
+      body:      noteData.body,
+      company:   noteData.company   ?? '',
+      tags:      noteData.tags      ?? [],
+      favorite:  noteData.favorite  ?? false,
+      createdAt: now(),
+      updatedAt: now(),
+    }
+  }
+
+  await chrome.storage.sync.set({ [noteKey(note.id)]: note })
+  const data = await getAll()
+  return data.notes
+}
+
+export async function deleteNote(id: string): Promise<void> {
+  await chrome.storage.sync.remove(noteKey(id))
+}
+
 // ─── Categories ───────────────────────────────────────────────────────────────
 
 export async function saveCategory(
@@ -264,10 +253,11 @@ export async function deleteCategory(id: string): Promise<void> {
   // Remove the category key
   await chrome.storage.sync.remove(catKey(id))
 
-  // Cascade: strip this category id from all tools and prompts that reference it
+  // Cascade: strip this category id from all tools, prompts, and notes
   const data = await getAll()
   const affectedTools   = data.tools.filter(t => t.tags.includes(id))
   const affectedPrompts = data.prompts.filter(p => p.tags.includes(id))
+  const affectedNotes   = data.notes.filter(n => n.tags.includes(id))
 
   const updates: Record<string, unknown> = {}
   affectedTools.forEach(t => {
@@ -275,6 +265,9 @@ export async function deleteCategory(id: string): Promise<void> {
   })
   affectedPrompts.forEach(p => {
     updates[promptKey(p.id)] = { ...p, tags: p.tags.filter(tag => tag !== id) }
+  })
+  affectedNotes.forEach(n => {
+    updates[noteKey(n.id)]   = { ...n, tags: n.tags.filter(tag => tag !== id) }
   })
 
   if (Object.keys(updates).length) await chrome.storage.sync.set(updates)

@@ -1,4 +1,4 @@
-// ─── Data models ──────────────────────────────────────────────────────────────
+// ─── Data models ─────────────────────────────────────────────────────────────
 
 export interface Tool {
   id: string
@@ -33,11 +33,24 @@ export interface Category {
   createdAt: string
 }
 
+export interface Note {
+  id: string
+  type: 'note'
+  title: string
+  body: string
+  company: string      // project / brand reference — empty string when absent
+  tags: string[]       // array of Category ids
+  favorite: boolean
+  createdAt: string
+  updatedAt: string
+}
+
 // ─── Storage shape ─────────────────────────────────────────────────────────────
 
 export interface StorageData {
   tools: Tool[]
   prompts: Prompt[]
+  notes: Note[]
   categories: Category[]
 }
 
@@ -59,4 +72,4 @@ export interface StorageUsage {
 
 // ─── Misc ──────────────────────────────────────────────────────────────────────
 
-export type Tab = 'categories' | 'tools' | 'prompts' | 'favorites'
+export type Tab = 'categories' | 'tools' | 'prompts' | 'notes' | 'favorites'

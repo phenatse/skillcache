@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { CSSProperties, FormEvent } from 'react'
-import type { Category, Tool, Prompt } from '@t/index'
+import type { Category, Tool, Prompt, Note } from '@t/index'
 import { T, getCatHue, getCatIconKey } from '../tokens'
 import { Icon, IconPaths, type IconKey } from '../icons'
 
@@ -8,17 +8,16 @@ interface CategoriesScreenProps {
   categories: Category[]
   tools: Tool[]
   prompts: Prompt[]
-  onFilter: (catName: string) => void
+  notes: Note[]
   onDelete: (id: string) => void
   onSave: (data: { id?: string; name: string }) => void
 }
 
-export function CategoriesScreen({ categories, tools, prompts, onFilter, onDelete, onSave }: CategoriesScreenProps) {
-  const [newName, setNewName] = useState('')
-  const [editId, setEditId] = useState<string | null>(null)
-  const [editName, setEditName] = useState('')
-
-  const totalItems = tools.length + prompts.length
+export function CategoriesScreen({ categories, tools, prompts, notes, onDelete, onSave }: CategoriesScreenProps) {
+  const [newName,      setNewName]      = useState('')
+  const [editId,       setEditId]       = useState<string | null>(null)
+  const [editName,     setEditName]     = useState('')
+  const [selectedCat,  setSelectedCat]  = useState<Category | null>(null)
 
   function handleAdd(e: FormEvent) {
     e.preventDefault()
@@ -35,9 +34,87 @@ export function CategoriesScreen({ categories, tools, prompts, onFilter, onDelet
     setEditName('')
   }
 
+  // ── Detail view ───────────────────────────────────────────────
+  if (selectedCat) {
+    const catTools   = tools.filter(t   => t.tags.includes(selectedCat.id))
+    const catPrompts = prompts.filter(p  => p.tags.includes(selectedCat.id))
+    const catNotes   = notes.filter(n   => n.tags.includes(selectedCat.id))
+    const hue        = getCatHue(selectedCat.name)
+
+    return (
+      <div>
+        {/* Back button */}
+        <button
+          onClick={() => setSelectedCat(null)}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 5,
+            background: 'none', border: 'none', cursor: 'pointer',
+            fontSize: 11, fontWeight: 500, color: T.indigoDeep,
+            fontFamily: T.font, padding: '0 0 10px 0',
+          }}
+        >
+          <Icon d={IconPaths.chevron} size={12} stroke={T.indigoDeep}
+            style={{ transform: 'rotate(180deg)' }} />
+          All categories
+        </button>
+
+        {/* Category heading */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+          <div style={{
+            width: 28, height: 28, borderRadius: 8,
+            background: `oklch(0.85 0.12 ${hue} / 0.7)`,
+            border: `1px solid oklch(0.7 0.15 ${hue} / 0.5)`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: `oklch(0.35 0.2 ${hue})`,
+          }}>
+            <Icon d={IconPaths[getCatIconKey(selectedCat.name) as IconKey] ?? IconPaths.hash} size={13} />
+          </div>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: T.ink, letterSpacing: -0.2, fontFamily: T.font }}>
+              {selectedCat.name}
+            </div>
+            <div style={{ fontSize: 9.5, fontFamily: T.mono, color: T.ink3, letterSpacing: 0.3 }}>
+              {catTools.length} tools · {catPrompts.length} prompts · {catNotes.length} notes
+            </div>
+          </div>
+        </div>
+
+        {catTools.length === 0 && catPrompts.length === 0 && catNotes.length === 0 && (
+          <p style={{ textAlign: 'center', color: T.ink3, padding: '30px 0', fontSize: 12, fontFamily: T.font }}>
+            No items tagged with this category yet.
+          </p>
+        )}
+
+        {catTools.length > 0 && (
+          <Section label="Tools">
+            {catTools.map(t => (
+              <DetailRow key={t.id} icon="tools" primary={t.name} secondary={t.description || t.url} hue={hue} />
+            ))}
+          </Section>
+        )}
+        {catPrompts.length > 0 && (
+          <Section label="Prompts">
+            {catPrompts.map(p => (
+              <DetailRow key={p.id} icon="prompt" primary={p.title} secondary={p.text} hue={hue} />
+            ))}
+          </Section>
+        )}
+        {catNotes.length > 0 && (
+          <Section label="Notes">
+            {catNotes.map(n => (
+              <DetailRow key={n.id} icon="note" primary={n.title} secondary={n.company ? `@ ${n.company}` : n.body} hue={hue} />
+            ))}
+          </Section>
+        )}
+      </div>
+    )
+  }
+
+  // ── Grid view ─────────────────────────────────────────────────
+  const totalItems = tools.length + prompts.length + notes.length
+
   return (
     <div>
-      {/* Meta row */}
       <div style={{
         display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
         marginBottom: 10,
@@ -47,13 +124,12 @@ export function CategoriesScreen({ categories, tools, prompts, onFilter, onDelet
         </span>
       </div>
 
-      {/* 2-column grid */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
         {categories.map(cat => {
-          const toolCount   = tools.filter(t => t.tags.includes(cat.id)).length
-          const promptCount = prompts.filter(p => p.tags.includes(cat.id)).length
-          const count = toolCount + promptCount
-          const hue = getCatHue(cat.name)
+          const count = tools.filter(t => t.tags.includes(cat.id)).length
+                      + prompts.filter(p => p.tags.includes(cat.id)).length
+                      + notes.filter(n => n.tags.includes(cat.id)).length
+          const hue     = getCatHue(cat.name)
           const iconKey = getCatIconKey(cat.name) as IconKey
 
           if (editId === cat.id) {
@@ -95,7 +171,7 @@ export function CategoriesScreen({ categories, tools, prompts, onFilter, onDelet
               hue={hue}
               iconKey={iconKey}
               hot={count > 0}
-              onClick={() => onFilter(cat.name)}
+              onClick={() => setSelectedCat(cat)}
               onEdit={() => { setEditId(cat.id); setEditName(cat.name) }}
               onDelete={() => {
                 if (window.confirm(`Delete "${cat.name}"? This removes the tag from all entries.`)) {
@@ -135,15 +211,64 @@ export function CategoriesScreen({ categories, tools, prompts, onFilter, onDelet
   )
 }
 
-interface CatTileProps {
-  name: string
-  count: number
+// ── Sub-components ────────────────────────────────────────────────────────────
+
+function Section({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <div style={{
+        fontSize: 9.5, fontFamily: T.mono, fontWeight: 600,
+        color: T.ink3, letterSpacing: 0.8, textTransform: 'uppercase',
+        marginBottom: 6,
+      }}>
+        {label}
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        {children}
+      </div>
+    </div>
+  )
+}
+
+function DetailRow({ icon, primary, secondary, hue }: {
+  icon: keyof typeof IconPaths
+  primary: string
+  secondary: string
   hue: number
-  iconKey: IconKey
-  hot: boolean
-  onClick: () => void
-  onEdit: () => void
-  onDelete: () => void
+}) {
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 8,
+      padding: '6px 10px', borderRadius: 8,
+      background: 'rgba(255,255,255,0.6)',
+      border: '1px solid rgba(50,60,110,0.07)',
+    }}>
+      <div style={{
+        width: 24, height: 24, borderRadius: 6, flexShrink: 0,
+        background: `oklch(0.92 0.07 ${hue} / 0.7)`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        color: `oklch(0.4 0.18 ${hue})`,
+      }}>
+        <Icon d={IconPaths[icon]} size={11} />
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 11.5, fontWeight: 500, color: T.ink, fontFamily: T.font, marginBottom: 1 }}>
+          {primary}
+        </div>
+        <div style={{
+          fontSize: 10, color: T.ink3, fontFamily: T.font,
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        }}>
+          {secondary}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+interface CatTileProps {
+  name: string; count: number; hue: number; iconKey: IconKey
+  hot: boolean; onClick: () => void; onEdit: () => void; onDelete: () => void
 }
 
 function CatTile({ name, count, hue, iconKey, hot, onClick, onEdit, onDelete }: CatTileProps) {
@@ -167,14 +292,12 @@ function CatTile({ name, count, hue, iconKey, hot, onClick, onEdit, onDelete }: 
         transform: hovered ? 'translateY(-1px)' : '',
       }}
     >
-      {/* Background glow blob */}
       <div style={{
         position: 'absolute', width: 90, height: 90, top: -25, right: -25,
         background: `radial-gradient(circle, oklch(0.78 0.18 ${hue} / 0.5) 0%, transparent 70%)`,
         filter: 'blur(12px)', pointerEvents: 'none',
       }} />
 
-      {/* Top row: icon + hot dot */}
       <div style={{ position: 'relative', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div style={{
           width: 30, height: 30, borderRadius: 8, flexShrink: 0,
@@ -194,7 +317,6 @@ function CatTile({ name, count, hue, iconKey, hot, onClick, onEdit, onDelete }: 
               boxShadow: '0 0 8px rgb(31,179,196)',
             }} />
           )}
-          {/* Hover-reveal edit/delete */}
           {hovered && (
             <div style={{ display: 'flex', gap: 3 }} onClick={e => e.stopPropagation()}>
               <button onClick={onEdit} style={tileActionStyle} title="Edit">
@@ -208,7 +330,6 @@ function CatTile({ name, count, hue, iconKey, hot, onClick, onEdit, onDelete }: 
         </div>
       </div>
 
-      {/* Bottom: name + count */}
       <div style={{ position: 'relative' }}>
         <div style={{ fontSize: 13, fontWeight: 600, color: T.ink, letterSpacing: -0.1, marginBottom: 2, fontFamily: T.font }}>
           {name}
